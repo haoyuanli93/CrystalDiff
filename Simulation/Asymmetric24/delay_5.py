@@ -64,18 +64,18 @@ tau_vals = [0., 0., 0., 0.]
 surface_points = [np.zeros(3, dtype=np.float64) for x in range(4)]
 
 # Initialize the crystals
-crystal_list = lclsutil.get_crystal_list_lcls2(num=4,
-                                               hlen_vals=hlen_vals,
-                                               rho_vals=rho_vals,
-                                               theta_vals=theta_vals,
-                                               tau_vals=tau_vals,
-                                               surface_points=surface_points,
-                                               chi0=complex(-0.97631E-05, 0.14871E-06),
-                                               chih_sigma=complex(0.59310E-05, -0.14320E-06),
-                                               chihbar_sigma=complex(0.59310E-05, -0.14320E-06),
-                                               chih_pi=complex(0.46945E-05, -0.11201E-06),
-                                               chihbar_pi=complex(0.46945E-05, -0.11201E-06)
-                                               )
+crystal_list = lclsutil.get_crystal_list(num=4,
+                                         hlen_vals=hlen_vals,
+                                         rho_vals=rho_vals,
+                                         theta_vals=theta_vals,
+                                         tau_vals=tau_vals,
+                                         surface_points=surface_points,
+                                         chi0=complex(-0.97631E-05, 0.14871E-06),
+                                         chih_sigma=complex(0.59310E-05, -0.14320E-06),
+                                         chihbar_sigma=complex(0.59310E-05, -0.14320E-06),
+                                         chih_pi=complex(0.46945E-05, -0.11201E-06),
+                                         chihbar_pi=complex(0.46945E-05, -0.11201E-06)
+                                         )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                               Pulse
@@ -122,18 +122,18 @@ intersection_points, kout_vec_list = lclsutil.get_intersection_point(kin_vec=my_
                                                                      path_sections=path_sections,
                                                                      crystal_list=crystal_list)
 
-crystal_list = lclsutil.get_crystal_list_lcls2(num=4,
-                                               hlen_vals=hlen_vals,
-                                               rho_vals=rho_vals,
-                                               theta_vals=theta_vals,
-                                               tau_vals=tau_vals,
-                                               surface_points=np.copy(intersection_points),
-                                               chi0=complex(-0.97631E-05, 0.14871E-06),
-                                               chih_sigma=complex(0.59310E-05, -0.14320E-06),
-                                               chihbar_sigma=complex(0.59310E-05, -0.14320E-06),
-                                               chih_pi=complex(0.46945E-05, -0.11201E-06),
-                                               chihbar_pi=complex(0.46945E-05, -0.11201E-06)
-                                               )
+crystal_list = lclsutil.get_crystal_list(num=4,
+                                         hlen_vals=hlen_vals,
+                                         rho_vals=rho_vals,
+                                         theta_vals=theta_vals,
+                                         tau_vals=tau_vals,
+                                         surface_points=np.copy(intersection_points),
+                                         chi0=complex(-0.97631E-05, 0.14871E-06),
+                                         chih_sigma=complex(0.59310E-05, -0.14320E-06),
+                                         chihbar_sigma=complex(0.59310E-05, -0.14320E-06),
+                                         chih_pi=complex(0.46945E-05, -0.11201E-06),
+                                         chihbar_pi=complex(0.46945E-05, -0.11201E-06)
+                                         )
 """
 Here is the starting point where different processes are distinguished
 """

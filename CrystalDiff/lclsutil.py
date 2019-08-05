@@ -11,8 +11,8 @@ other modules can depend on this module.
 # --------------------------------------------------------------
 #              Setup crystals
 # --------------------------------------------------------------
-def get_crystal_list_lcls2(num, hlen_vals, theta_vals, rho_vals, tau_vals, surface_points,
-                           chi0, chih_sigma, chih_pi, chihbar_sigma, chihbar_pi):
+def get_crystal_list(num, hlen_vals, theta_vals, rho_vals, tau_vals, surface_points,
+                     chi0, chih_sigma, chih_pi, chihbar_sigma, chihbar_pi):
     """
     This function is designed for lcls2 specifically.
 
@@ -95,9 +95,64 @@ def get_intersection_point(kin_vec, path_sections, crystal_list):
 # --------------------------------------------------------------
 #              Change Frame
 # --------------------------------------------------------------
+def get_rot_mat_dict(kin, kout, aux=np.array([1., 0., 0.])):
+    """
+    Here, we assume that the aux is the x axis and does not change very much.
+    :param kin:
+    :param kout:
+    :param aux:
+    :return:
+    """
+    # Get a holder
+    rot_mat_dict = {}
+
+    # -------------------------------------------------
+    # Device to the incident pulse
+    # -------------------------------------------------
+    tmp_z = kin / util.l2_norm(kin)
+
+    tmp_y = np.cross(tmp_z, aux)
+    tmp_y /= util.l2_norm(tmp_y)
+
+    tmp_x = np.cross(tmp_y, tmp_z)
+    tmp_x /= util.l2_norm(tmp_x)
+
+    # Rotation matrix from the incident pulse to the device
+    rot_mat_dict.update({"Device to In-Pulse": np.vstack([tmp_x, tmp_y, tmp_z])})
+    rot_mat_dict.update({"In-Pulse to Device": rot_mat_dict["Device to In-Pulse"].T})
+
+    # -------------------------------------------------
+    # Device to the output pulse
+    # -------------------------------------------------
+    # When the input pulse and the output pulse are not along the same direction.
+    new_z = kout / util.l2_norm(kout)
+
+    new_y = np.cross(new_z, aux)
+    new_y /= util.l2_norm(new_y)
+
+    new_x = np.cross(new_y, new_z)
+    new_x /= util.l2_norm(new_x)
+
+    # Rotation matrix from the output pulse to the device
+    rot_mat_dict.update({"Device to Out-Pulse": np.vstack([new_x, new_y, new_z])})
+    rot_mat_dict.update({"Out-Pulse to Device": rot_mat_dict["Device to Out-Pulse"].T})
+
+    # -------------------------------------------------
+    # Incident pulse to the output pulse
+    # -------------------------------------------------
+
+    tmp_matrix = np.dot(rot_mat_dict["In-Pulse to Device"],
+                        rot_mat_dict["Device to Out-Pulse"])
+
+    rot_mat_dict.update({"In-Pulse to Out-Pulse": tmp_matrix})
+    rot_mat_dict.update({"Out-Pulse to In-Pulse": tmp_matrix.T})
+
+    return rot_mat_dict
+
+
 def get_to_kout_frame(kin, kout, displacement, obvservation, pulse, crystal_list, aux):
     # Get the rotation matrix
-    rot_mat_dict = util.get_rot_mat_dict(kin=kin, kout=kout, aux=aux)
+    rot_mat_dict = get_rot_mat_dict(kin=kin, kout=kout, aux=aux)
 
     # ------------------------------
     # Shift the position

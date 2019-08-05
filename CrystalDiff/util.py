@@ -295,75 +295,6 @@ def get_intersection_point(s, k, n, x0):
 # --------------------------------------------------------------
 #          Geometric operation
 # --------------------------------------------------------------
-def get_rot_mat_dict(kin, kout, aux=np.array([1., 0., 0.])):
-    """
-    Given the incident central momentum, the diffracted central momentum
-    and the reciprocal lattice, decide the rotation matrices such that
-    1. From the incident pulse frame to the device frame
-    2. From the device frame to the diffracted pulse frame
-    3. From the incident pulse frame to the diffracted pulse frame
-
-    For the incident pulse, the kin and h span z-y plane.
-    Fot the output pulse, the kout and kin span the z-y plane.
-
-    I use the convention such that when the angle is small, the z axis
-    is the propagation direction. The y is the vertical direction. The
-    x is the horizontal direction.
-
-    :param kin:
-    :param kout:
-    :param aux: Sometimes, when the kin and kout are exactly the same, or differ only by
-                a very small a mount, then we would like to specify an aux vector to
-                make the rotation operation more realistic.
-    :return:
-    """
-    # Get a holder
-    rot_mat_dict = {}
-
-    # -------------------------------------------------
-    # Device to the incident pulse
-    # -------------------------------------------------
-    tmp_z = kin / l2_norm(kin)
-
-    tmp_y = np.cross(tmp_z, aux)
-    tmp_y /= l2_norm(tmp_y)
-
-    tmp_x = np.cross(tmp_y, tmp_z)
-    tmp_x /= l2_norm(tmp_x)
-
-    # Rotation matrix from the incident pulse to the device
-    rot_mat_dict.update({"Device to In-Pulse": np.vstack([tmp_x, tmp_y, tmp_z])})
-    rot_mat_dict.update({"In-Pulse to Device": rot_mat_dict["Device to In-Pulse"].T})
-
-    # -------------------------------------------------
-    # Device to the output pulse
-    # -------------------------------------------------
-    # When the input pulse and the output pulse are not along the same direction.
-    new_z = kout / l2_norm(kout)
-
-    new_y = np.cross(new_z, aux)
-    new_y /= l2_norm(new_y)
-
-    new_x = np.cross(new_y, new_z)
-    new_x /= l2_norm(new_x)
-
-    # Rotation matrix from the output pulse to the device
-    rot_mat_dict.update({"Device to Out-Pulse": np.vstack([new_x, new_y, new_z])})
-    rot_mat_dict.update({"Out-Pulse to Device": rot_mat_dict["Device to Out-Pulse"].T})
-
-    # -------------------------------------------------
-    # Incident pulse to the output pulse
-    # -------------------------------------------------
-
-    tmp_matrix = np.dot(rot_mat_dict["In-Pulse to Device"],
-                        rot_mat_dict["Device to Out-Pulse"])
-
-    rot_mat_dict.update({"In-Pulse to Out-Pulse": tmp_matrix})
-    rot_mat_dict.update({"Out-Pulse to In-Pulse": tmp_matrix.T})
-
-    return rot_mat_dict
-
-
 def get_total_path_length(intersection_point_list):
     """
     Get the path length of a series of points
@@ -378,12 +309,6 @@ def get_total_path_length(intersection_point_list):
                               intersection_point_list[l])
 
     return total_path
-
-
-def get_phase_1d(k_grid, omega_grid, dx, dt):
-    pre_phase = np.dot(k_grid, dx) - omega_grid * dt
-    phase = np.cos(pre_phase) + 1.j * np.sin(pre_phase)
-    return pre_phase, phase
 
 
 # ---------------------------------------------------------------------------
