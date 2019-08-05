@@ -12,7 +12,7 @@ sys.path.append(r"C:\Users\hyli93\Documents\GitHub\CrystalDiffraction")
 display(HTML("<style>.container { width:90% !important; }</style>"))
 
 from numba import cuda
-from CrystalDiff import util, pulse, auxiliary, gutil
+from CrystalDiff import util, pulse, lclsutil, gutil_bk_2019_8_5
 
 ############################################################################################################
 # ----------------------------------------------------------------------------------------------------------
@@ -52,18 +52,18 @@ tau_vals = [0.,
 surface_points = [np.zeros(3, dtype=np.float64) for x in range(4)]
 
 # Initialize the crystals
-crystal_list = auxiliary.get_crystal_list_lcls2(num=4,
-                                                hlen_vals=hlen_vals,
-                                                rho_vals=rho_vals,
-                                                theta_vals=theta_vals,
-                                                tau_vals=tau_vals,
-                                                surface_points=surface_points,
-                                                chi0=complex(-0.97631E-05, 0.14871E-06),
-                                                chih_sigma=complex(0.59310E-05, -0.14320E-06),
-                                                chihbar_sigma=complex(0.59310E-05, -0.14320E-06),
-                                                chih_pi=complex(0.46945E-05, -0.11201E-06),
-                                                chihbar_pi=complex(0.46945E-05, -0.11201E-06)
-                                                )
+crystal_list = lclsutil.get_crystal_list_lcls2(num=4,
+                                               hlen_vals=hlen_vals,
+                                               rho_vals=rho_vals,
+                                               theta_vals=theta_vals,
+                                               tau_vals=tau_vals,
+                                               surface_points=surface_points,
+                                               chi0=complex(-0.97631E-05, 0.14871E-06),
+                                               chih_sigma=complex(0.59310E-05, -0.14320E-06),
+                                               chihbar_sigma=complex(0.59310E-05, -0.14320E-06),
+                                               chih_pi=complex(0.46945E-05, -0.11201E-06),
+                                               chihbar_pi=complex(0.46945E-05, -0.11201E-06)
+                                               )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                               Pulse
@@ -106,22 +106,22 @@ my_pulse.x0 = np.array([0., 0., -pre_length])
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 path_sections = [0., 2. * 1e4, 12. * 1e4, 2. * 1e4]
 
-intersection_points, kout_vec_list = auxiliary.get_intersection_point(kin_vec=my_pulse.k0,
-                                                                      path_sections=path_sections,
-                                                                      crystal_list=crystal_list)
+intersection_points, kout_vec_list = lclsutil.get_intersection_point(kin_vec=my_pulse.k0,
+                                                                     path_sections=path_sections,
+                                                                     crystal_list=crystal_list)
 
-crystal_list = auxiliary.get_crystal_list_lcls2(num=4,
-                                                hlen_vals=hlen_vals,
-                                                rho_vals=rho_vals,
-                                                theta_vals=theta_vals,
-                                                tau_vals=tau_vals,
-                                                surface_points=np.copy(intersection_points),
-                                                chi0=complex(-0.97631E-05, 0.14871E-06),
-                                                chih_sigma=complex(0.59310E-05, -0.14320E-06),
-                                                chihbar_sigma=complex(0.59310E-05, -0.14320E-06),
-                                                chih_pi=complex(0.46945E-05, -0.11201E-06),
-                                                chihbar_pi=complex(0.46945E-05, -0.11201E-06)
-                                                )
+crystal_list = lclsutil.get_crystal_list_lcls2(num=4,
+                                               hlen_vals=hlen_vals,
+                                               rho_vals=rho_vals,
+                                               theta_vals=theta_vals,
+                                               tau_vals=tau_vals,
+                                               surface_points=np.copy(intersection_points),
+                                               chi0=complex(-0.97631E-05, 0.14871E-06),
+                                               chih_sigma=complex(0.59310E-05, -0.14320E-06),
+                                               chihbar_sigma=complex(0.59310E-05, -0.14320E-06),
+                                               chih_pi=complex(0.46945E-05, -0.11201E-06),
+                                               chihbar_pi=complex(0.46945E-05, -0.11201E-06)
+                                               )
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Get the observation point
@@ -139,13 +139,13 @@ print("The total propagation length is {:.2f}um.".format(total_path))
 (my_pulse,
  crystal_list,
  observation,
- rot_mat_dict) = auxiliary.get_to_kout_frame_lcls2(kin=my_pulse.k0,
-                                                   kout=kout_vec_list[0],
-                                                   h=crystal_list[0].h,
-                                                   displacement=-intersection_points[0],
-                                                   obvservation=observation,
-                                                   pulse=my_pulse,
-                                                   crystal_list=crystal_list)
+ rot_mat_dict) = lclsutil.get_to_kout_frame_lcls2(kin=my_pulse.k0,
+                                                  kout=kout_vec_list[0],
+                                                  h=crystal_list[0].h,
+                                                  displacement=-intersection_points[0],
+                                                  obvservation=observation,
+                                                  pulse=my_pulse,
+                                                  crystal_list=crystal_list)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    ~~~~~~~~~~~~~
 #                  Get the momentum mesh
@@ -154,14 +154,14 @@ phi_num = 2
 theta_num = 500
 k_num = 2000
 
-info_dict = auxiliary.get_klen_and_angular_mesh(k_num=k_num,
-                                                theta_num=theta_num,
-                                                phi_num=phi_num,
-                                                energy_range=[energy_center - 1e-2 - 4e-4,
+info_dict = lclsutil.get_klen_and_angular_mesh(k_num=k_num,
+                                               theta_num=theta_num,
+                                               phi_num=phi_num,
+                                               energy_range=[energy_center - 1e-2 - 4e-4,
                                                               energy_center + 1e-2 - 4e-4],
-                                                theta_range=[-np.radians(0.01),
+                                               theta_range=[-np.radians(0.01),
                                                              np.radians(0.01)],
-                                                phi_range=[-np.pi, np.pi])
+                                               phi_range=[-np.pi, np.pi])
 
 ############################################################################################################
 # ----------------------------------------------------------------------------------------------------------
@@ -333,15 +333,15 @@ for theta_idx in range(theta_num):
     # --------------------------------------------------------------------
     #  Step 1. Get k_out mesh
     # --------------------------------------------------------------------
-    gutil.initialize_kvec_grid_dumond[b_num, d_num](cuda_kout_grid,
-                                                    cuda_klen_grid,
-                                                    x_coef,
-                                                    y_coef,
-                                                    z_coef,
-                                                    k_num)
+    gutil_bk_2019_8_5.initialize_kvec_grid_dumond[b_num, d_num](cuda_kout_grid,
+                                                                cuda_klen_grid,
+                                                                x_coef,
+                                                                y_coef,
+                                                                z_coef,
+                                                                k_num)
 
-    gutil.initialize_jacobian_grid[b_num, d_num](cuda_jacob,
-                                                 k_num)
+    gutil_bk_2019_8_5.initialize_jacobian_grid[b_num, d_num](cuda_jacob,
+                                                             k_num)
     # --------------------------------------------------------------------
     #  Step 2. Get k_in mesh and the jacobian
     # --------------------------------------------------------------------
@@ -350,82 +350,82 @@ for theta_idx in range(theta_num):
     # Crystal 1
     # --------------
     # Get the intersection point from the final point
-    gutil.get_intersection_point_final_reflection[b_num, d_num](cuda_remain_path,
-                                                                cuda_intersect,
-                                                                cuda_kout_grid,
-                                                                cuda_klen_grid,
-                                                                total_path,
-                                                                observation,
-                                                                crystal_list[0].surface_point,
-                                                                crystal_list[0].normal,
-                                                                k_num)
+    gutil_bk_2019_8_5.get_intersection_point_final_reflection[b_num, d_num](cuda_remain_path,
+                                                                            cuda_intersect,
+                                                                            cuda_kout_grid,
+                                                                            cuda_klen_grid,
+                                                                            total_path,
+                                                                            observation,
+                                                                            crystal_list[0].surface_point,
+                                                                            crystal_list[0].normal,
+                                                                            k_num)
 
     # Calculate the incident wave vector
-    gutil.get_kin_grid_and_jacobian[b_num, d_num](cuda_kin_grid,
-                                                  cuda_jacob,
-                                                  cuda_klen_grid,
-                                                  cuda_kout_grid,
-                                                  crystal_list[0].h,
-                                                  crystal_list[0].normal,
-                                                  crystal_list[0].dot_hn,
-                                                  crystal_list[0].h_square,
-                                                  k_num)
+    gutil_bk_2019_8_5.get_kin_grid_and_jacobian[b_num, d_num](cuda_kin_grid,
+                                                              cuda_jacob,
+                                                              cuda_klen_grid,
+                                                              cuda_kout_grid,
+                                                              crystal_list[0].h,
+                                                              crystal_list[0].normal,
+                                                              crystal_list[0].dot_hn,
+                                                              crystal_list[0].h_square,
+                                                              k_num)
 
     # """
     # --------------------------------------------------------------------
     #  Step 3. Get the Fourier coefficients
     # --------------------------------------------------------------------
     # Calculate the corresponding coefficient in the incident pulse
-    gutil.get_gaussian_pulse_spectrum[b_num, d_num](cuda_coef,
-                                                    cuda_kin_grid,
-                                                    0.,
-                                                    my_pulse.sigma_mat,
-                                                    my_pulse.scaling,
-                                                    np.zeros(3, dtype=np.float64),
-                                                    my_pulse.k0,
-                                                    my_pulse.omega0,
-                                                    my_pulse.n,
-                                                    k_num)
+    gutil_bk_2019_8_5.get_gaussian_pulse_spectrum[b_num, d_num](cuda_coef,
+                                                                cuda_kin_grid,
+                                                                0.,
+                                                                my_pulse.sigma_mat,
+                                                                my_pulse.scaling,
+                                                                np.zeros(3, dtype=np.float64),
+                                                                my_pulse.k0,
+                                                                my_pulse.omega0,
+                                                                my_pulse.n,
+                                                                k_num)
 
     # --------------------------------------------------------------------
     #  Step 4. Find the initial source position and phase
     # --------------------------------------------------------------------
-    gutil.find_source_point[b_num, d_num](cuda_source_point,
-                                          cuda_intersect,
-                                          cuda_kin_grid,
-                                          cuda_klen_grid,
-                                          cuda_remain_path,
-                                          k_num)
+    gutil_bk_2019_8_5.find_source_point[b_num, d_num](cuda_source_point,
+                                                      cuda_intersect,
+                                                      cuda_kin_grid,
+                                                      cuda_klen_grid,
+                                                      cuda_remain_path,
+                                                      k_num)
 
     # Get the propagational phase and distance
-    gutil.get_phase_and_distance[b_num, d_num](cuda_phase,
-                                               cuda_source_point,
-                                               cuda_distance_grid,
-                                               cuda_spatial_phase,
-                                               my_pulse.x0,
-                                               cuda_kin_grid,
-                                               my_pulse.k0,
-                                               k_num)
+    gutil_bk_2019_8_5.get_phase_and_distance[b_num, d_num](cuda_phase,
+                                                           cuda_source_point,
+                                                           cuda_distance_grid,
+                                                           cuda_spatial_phase,
+                                                           my_pulse.x0,
+                                                           cuda_kin_grid,
+                                                           my_pulse.k0,
+                                                           k_num)
 
     # Add the phase
-    gutil.element_wise_multiply_complex[b_num, d_num](cuda_coef,
-                                                      cuda_phase,
-                                                      cuda_spectrum,
-                                                      k_num
-                                                      )
+    gutil_bk_2019_8_5.element_wise_multiply_complex[b_num, d_num](cuda_coef,
+                                                                  cuda_phase,
+                                                                  cuda_spectrum,
+                                                                  k_num
+                                                                  )
 
     # Add Jacobian
-    gutil.element_wise_multiply_complex[b_num, d_num](cuda_spectrum,
-                                                      cuda_jacob,
-                                                      cuda_spectrum,
-                                                      k_num
-                                                      )
+    gutil_bk_2019_8_5.element_wise_multiply_complex[b_num, d_num](cuda_spectrum,
+                                                                  cuda_jacob,
+                                                                  cuda_spectrum,
+                                                                  k_num
+                                                                  )
 
     # Get the vector field
-    gutil.expand_scalar_grid_to_vector_grid[b_num, d_num](cuda_spectrum,
-                                                          my_pulse.polar,
-                                                          cuda_spectrum_vec,
-                                                          k_num)
+    gutil_bk_2019_8_5.expand_scalar_grid_to_vector_grid[b_num, d_num](cuda_spectrum,
+                                                                      my_pulse.polar,
+                                                                      cuda_spectrum_vec,
+                                                                      k_num)
 
     # --------------------------------------------------------------------
     #  Step 5. Forward propagation
@@ -433,69 +433,69 @@ for theta_idx in range(theta_num):
     # --------------
     # Crystal 1
     # --------------
-    gutil.get_bragg_field_natural_direction[b_num, d_num](cuda_reflect_total_sigma,
-                                                          cuda_reflect_total_pi,
-                                                          cuda_kin_grid,
-                                                          cuda_spectrum_vec,
-                                                          cuda_klen_grid,
-                                                          cuda_kin_grid,
-                                                          crystal_list[0].d,
-                                                          crystal_list[0].h,
-                                                          crystal_list[0].normal,
-                                                          crystal_list[0].dot_hn,
-                                                          crystal_list[0].h_square,
-                                                          crystal_list[0].h_len,
-                                                          crystal_list[0].chi0,
-                                                          crystal_list[0].chih_sigma,
-                                                          crystal_list[0].chihbar_sigma,
-                                                          crystal_list[0].chih_pi,
-                                                          crystal_list[0].chihbar_pi,
-                                                          k_num)
+    gutil_bk_2019_8_5.get_bragg_field_natural_direction[b_num, d_num](cuda_reflect_total_sigma,
+                                                                      cuda_reflect_total_pi,
+                                                                      cuda_kin_grid,
+                                                                      cuda_spectrum_vec,
+                                                                      cuda_klen_grid,
+                                                                      cuda_kin_grid,
+                                                                      crystal_list[0].d,
+                                                                      crystal_list[0].h,
+                                                                      crystal_list[0].normal,
+                                                                      crystal_list[0].dot_hn,
+                                                                      crystal_list[0].h_square,
+                                                                      crystal_list[0].h_len,
+                                                                      crystal_list[0].chi0,
+                                                                      crystal_list[0].chih_sigma,
+                                                                      crystal_list[0].chihbar_sigma,
+                                                                      crystal_list[0].chih_pi,
+                                                                      crystal_list[0].chihbar_pi,
+                                                                      k_num)
 
     # --------------
     # Save the reflectivity
     # --------------
-    gutil.fill_column_complex[b_num, d_num](cuda_reflect_sigma_2d,
-                                            cuda_reflect_total_sigma,
-                                            central_start,
-                                            theta_idx,
-                                            k_idx_range)
+    gutil_bk_2019_8_5.fill_column_complex[b_num, d_num](cuda_reflect_sigma_2d,
+                                                        cuda_reflect_total_sigma,
+                                                        central_start,
+                                                        theta_idx,
+                                                        k_idx_range)
 
-    gutil.fill_column_complex[b_num, d_num](cuda_reflect_pi_2d,
-                                            cuda_reflect_total_pi,
-                                            central_start,
-                                            theta_idx,
-                                            k_idx_range)
+    gutil_bk_2019_8_5.fill_column_complex[b_num, d_num](cuda_reflect_pi_2d,
+                                                        cuda_reflect_total_pi,
+                                                        central_start,
+                                                        theta_idx,
+                                                        k_idx_range)
 
     # --------------------------------------------------------------------
     #  Step 6. Goes from the reciprocal space to the real space
     # --------------------------------------------------------------------
     # Decompose the electric field
     # Save the result to the total reflectivity
-    gutil.vector_decomposition[b_num, d_num](cuda_spectrum_vec,
-                                             cuda_spectrum_x,
-                                             cuda_spectrum_y,
-                                             cuda_spectrum_z,
-                                             k_num)
+    gutil_bk_2019_8_5.vector_decomposition[b_num, d_num](cuda_spectrum_vec,
+                                                         cuda_spectrum_x,
+                                                         cuda_spectrum_y,
+                                                         cuda_spectrum_z,
+                                                         k_num)
     # Save the spectrum of the field
-    gutil.fill_column_complex[b_num, d_num](cuda_x_spectrum_2d,
-                                            cuda_spectrum_x,
-                                            central_start,
-                                            theta_idx,
-                                            k_idx_range
-                                            )
-    gutil.fill_column_complex[b_num, d_num](cuda_y_spectrum_2d,
-                                            cuda_spectrum_y,
-                                            central_start,
-                                            theta_idx,
-                                            k_idx_range
-                                            )
-    gutil.fill_column_complex[b_num, d_num](cuda_z_spectrum_2d,
-                                            cuda_spectrum_z,
-                                            central_start,
-                                            theta_idx,
-                                            k_idx_range
-                                            )
+    gutil_bk_2019_8_5.fill_column_complex[b_num, d_num](cuda_x_spectrum_2d,
+                                                        cuda_spectrum_x,
+                                                        central_start,
+                                                        theta_idx,
+                                                        k_idx_range
+                                                        )
+    gutil_bk_2019_8_5.fill_column_complex[b_num, d_num](cuda_y_spectrum_2d,
+                                                        cuda_spectrum_y,
+                                                        central_start,
+                                                        theta_idx,
+                                                        k_idx_range
+                                                        )
+    gutil_bk_2019_8_5.fill_column_complex[b_num, d_num](cuda_z_spectrum_2d,
+                                                        cuda_spectrum_z,
+                                                        central_start,
+                                                        theta_idx,
+                                                        k_idx_range
+                                                        )
     # """
 
 ###################################################################################################
