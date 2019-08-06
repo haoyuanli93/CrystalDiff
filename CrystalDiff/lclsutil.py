@@ -61,7 +61,7 @@ def get_crystal_list(num, hlen_vals, theta_vals, rho_vals, tau_vals, surface_poi
     return crystal_list
 
 
-def get_intersection_point(kin_vec, path_sections, crystal_list):
+def get_point_with_definite_path(kin_vec, path_sections, crystal_list):
     # Get k0 information to calculation
     k0_vec = kin_vec.reshape((1, 3))
     k_len = np.array([util.l2_norm(k0_vec[0])])
@@ -83,13 +83,58 @@ def get_intersection_point(kin_vec, path_sections, crystal_list):
         diffract_info = util.get_output_wave_vector(k0_grid=k0_vec,
                                                     k_grid=k_len,
                                                     crystal_h=crystal_list[idx].h,
-                                                    z=crystal_list[idx].normal)
+                                                    crystal_normal=crystal_list[idx].normal)
         k0_vec = diffract_info["kh_grid"]
 
         # Get the reflected momentum
         kout_list[idx] = k0_vec[0]
 
     return intersect_list[1:], kout_list
+
+
+def get_intersection_point(kin_vec, init_point, crystal_list):
+    """
+    Get the array of the diffracted momentum and the intersection momentum
+
+    :param kin_vec:
+    :param init_point:
+    :param crystal_list:
+    :return:
+    """
+    # Get the reflection number
+    reflect_num = len(crystal_list)
+
+    # Create holders
+    kout_array = np.zeros((reflect_num, 3), dtype=np.float64)
+    intersect_array = np.zeros((reflect_num, 3), dtype=np.float64)
+
+    # Copy the variables to avoid potential modification
+    s = np.reshape(init_point, (1, 3))
+    k = np.reshape(kin_vec, (1, 3))
+
+    # Loop through all the reflections
+    for idx in range(reflect_num):
+
+        # Get the intersection point
+        intersect_tmp = util.get_intersection_point(s=s,
+                                                    k=k,
+                                                    n=crystal_list[idx].normal,
+                                                    x0=crystal_list[idx].surface_point)
+        intersect_array[idx] = intersect_tmp[0]
+
+        # Get the output momentum
+        kout_tmp = util.get_output_wave_vector(k0_grid=k,
+                                               k_grid=util.l2_norm_batch(k),
+                                               crystal_h=crystal_list[idx].h,
+                                               crystal_normal=crystal_list[idx].normal)
+
+        # Update the k and s and kout holder
+        kout_array[idx] = kout_tmp["kh_grid"][0]
+
+        k = np.copy(kout_tmp["kh_grid"])
+        s = np.copy(intersect_tmp)
+
+    return intersect_array, kout_array
 
 
 # --------------------------------------------------------------

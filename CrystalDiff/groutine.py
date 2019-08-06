@@ -74,8 +74,8 @@ def get_bragg_reflected_field(crystal_list, total_path, observation, my_pulse,
     intersect_points = np.ascontiguousarray(np.zeros((number_z, 3), dtype=np.float64))
     source_points = np.ascontiguousarray(np.zeros((number_z, 3), dtype=np.float64))
     remaining_length = np.ascontiguousarray(np.zeros(number_z, dtype=np.float64))
-    phase_grid = np.ascontiguousarray(np.zeros(number_z, dtype=np.complex128))
-    jacob_grid = np.ascontiguousarray(np.zeros(number_z, dtype=np.float64))
+    phase_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
+    jacob_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.float64))
 
     cuda_intersect = cuda.to_device(intersect_points)
     cuda_source_points = cuda.to_device(source_points)
@@ -127,15 +127,11 @@ def get_bragg_reflected_field(crystal_list, total_path, observation, my_pulse,
 
     kz_grid = np.ascontiguousarray(kz_grid)
     kz_square = np.ascontiguousarray(np.square(kz_grid))
-    kout_grid = np.zeros((number_z, 3), dtype=np.float64)
-    kout_grid[:, 2] = kz_grid[:]
-    kout_grid = np.ascontiguousarray(kout_grid)
 
     cuda_kin_grid = cuda.to_device(kin_grid)
     cuda_klen_grid = cuda.to_device(klen_grid)
     cuda_kz_grid = cuda.to_device(kz_grid)
     cuda_kz_square = cuda.to_device(kz_square)
-    cuda_kout_grid = cuda.to_device(kout_grid)
 
     toc = time.time()
     print("It takes {:.2f} seconds to prepare the variables.".format(toc - tic))
@@ -158,7 +154,7 @@ def get_bragg_reflected_field(crystal_list, total_path, observation, my_pulse,
             # --------------------------------------------------------------------
             #  Step 1. Get k_out mesh
             # --------------------------------------------------------------------
-            gfun.init_kvec[b_num, d_num](cuda_kout_grid,
+            gfun.init_kvec[b_num, d_num](cuda_kin_grid,
                                          cuda_klen_grid,
                                          cuda_kz_grid,
                                          cuda_kz_square,
@@ -193,7 +189,7 @@ def get_bragg_reflected_field(crystal_list, total_path, observation, my_pulse,
                 gfun.get_kin_and_jacobian[b_num, d_num](cuda_kin_grid,
                                                         cuda_jacob,
                                                         cuda_klen_grid,
-                                                        cuda_kout_grid,
+                                                        cuda_kin_grid,
                                                         crystal_list[crystal_idx].h,
                                                         crystal_list[crystal_idx].normal,
                                                         crystal_list[crystal_idx].dot_hn,
@@ -407,7 +403,6 @@ def get_bragg_reflected_field(crystal_list, total_path, observation, my_pulse,
     cuda_phase.to_host()
 
     cuda_kin_grid.to_host()
-    cuda_kout_grid.to_host()
     cuda_klen_grid.to_host()
 
     cuda_reflect_pi.to_host()

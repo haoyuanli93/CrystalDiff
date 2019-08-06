@@ -92,40 +92,40 @@ def wave_number_to_kev(wavevec):
 # --------------------------------------------------------------
 #          Get wave vectors
 # --------------------------------------------------------------
-def get_gamma_h_3d(k0_grid, k_grid, crystal_h, z):
+def get_gamma_h_3d(k0_grid, k_grid, crystal_h, crystal_normal):
     """
 
     :param k0_grid: A array of wavevectors. The last dimension is each specific wave vectors
     :param k_grid: The length of the array of the wave vectors
     :param crystal_h: The reciprocal for the diffraction
-    :param z: The normal direction of the lattice
+    :param crystal_normal: The normal direction of the lattice
     :return:
     """
-    return np.divide(np.dot(k0_grid, z) + np.dot(crystal_h, z), k_grid)
+    return np.divide(np.dot(k0_grid, crystal_normal) + np.dot(crystal_h, crystal_normal), k_grid)
 
 
-def get_gamma_0_3d(k0_grid, k_grid, z):
+def get_gamma_0_3d(k0_grid, k_grid, crystal_normal):
     """
 
     :param k0_grid: A array of wavevectors. The last dimension is each specific wave vectors
     :param k_grid: The length of the array of the wave vectors
-    :param z: The normal direction of the lattice
+    :param crystal_normal: The normal direction of the lattice
     :return:
     """
-    return np.divide(np.dot(k0_grid, z), k_grid)
+    return np.divide(np.dot(k0_grid, crystal_normal), k_grid)
 
 
-def get_rho_h_3d(kh_grid, k_grid, crystal_h, z):
+def get_rho_h_3d(kh_grid, k_grid, crystal_h, crystal_normal):
     """
     This parameter is used to derive the incident wave vector from the reflected wave vector
 
     :param kh_grid:
     :param k_grid:
     :param crystal_h:
-    :param z:
+    :param crystal_normal:
     :return:
     """
-    return np.divide(np.dot(crystal_h, z) - np.dot(kh_grid, z), k_grid)
+    return np.divide(np.dot(crystal_h, crystal_normal) - np.dot(kh_grid, crystal_normal), k_grid)
 
 
 def get_alpha_3d(k0_grid, k_grid, crystal_h):
@@ -194,20 +194,20 @@ def get_momentum_transfer_reverse(k_grid, rho_h_grid, epsilon_grid):
     return get_momentum_transfer(k_grid, gamma_h_grid=rho_h_grid, alpha_grid=epsilon_grid)
 
 
-def get_output_wave_vector(k0_grid, k_grid, crystal_h, z):
+def get_output_wave_vector(k0_grid, k_grid, crystal_h, crystal_normal):
     """
     Given the input wave vector, derive the output wave vector
 
     :param k0_grid:
     :param k_grid:
     :param crystal_h:
-    :param z:
+    :param crystal_normal:
     :return:
     """
     gamma_h_grid = get_gamma_h_3d(k0_grid=k0_grid,
                                   k_grid=k_grid,
                                   crystal_h=crystal_h,
-                                  z=z)
+                                  crystal_normal=crystal_normal)
     alpha_grid = get_alpha_3d(k0_grid=k0_grid,
                               k_grid=k_grid,
                               crystal_h=crystal_h)
@@ -215,14 +215,14 @@ def get_output_wave_vector(k0_grid, k_grid, crystal_h, z):
     momentum_transfer = get_momentum_transfer(k_grid=k_grid,
                                               gamma_h_grid=gamma_h_grid,
                                               alpha_grid=alpha_grid)
-    momentum_transfer = np.multiply(z[np.newaxis, :], momentum_transfer[:, np.newaxis])
+    momentum_transfer = np.multiply(crystal_normal[np.newaxis, :], momentum_transfer[:, np.newaxis])
 
     kh_grid = k0_grid + crystal_h[np.newaxis, :] + momentum_transfer
 
     rho_h_grid = get_rho_h_3d(kh_grid=kh_grid,
                               k_grid=k_grid,
                               crystal_h=crystal_h,
-                              z=z)
+                              crystal_normal=crystal_normal)
     epsilon_grid = get_epsilon_3d(kh_grid=kh_grid,
                                   k_grid=k_grid,
                                   crystal_h=crystal_h)
@@ -243,7 +243,7 @@ def get_input_wave_vector(kh_grid, k_grid, crystal_h, z):
     rho_h_grid = get_rho_h_3d(kh_grid=kh_grid,
                               k_grid=k_grid,
                               crystal_h=crystal_h,
-                              z=z)
+                              crystal_normal=z)
 
     epsilon_grid = get_epsilon_3d(kh_grid=kh_grid,
                                   k_grid=k_grid,
@@ -257,8 +257,8 @@ def get_input_wave_vector(kh_grid, k_grid, crystal_h, z):
     # get the incident wave vector
     k0_grid = kh_grid - crystal_h[np.newaxis, :] - momentum_transfer
 
-    gamma_0_grid = get_gamma_0_3d(k0_grid=k0_grid, k_grid=k_grid, z=z)
-    gamma_h_grid = get_gamma_h_3d(k0_grid=k0_grid, k_grid=k_grid, z=z,
+    gamma_0_grid = get_gamma_0_3d(k0_grid=k0_grid, k_grid=k_grid, crystal_normal=z)
+    gamma_h_grid = get_gamma_h_3d(k0_grid=k0_grid, k_grid=k_grid, crystal_normal=z,
                                   crystal_h=crystal_h)
     alpha_grid = get_alpha_3d(k0_grid=k0_grid,
                               k_grid=k_grid,
