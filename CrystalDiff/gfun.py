@@ -88,11 +88,18 @@ def init_phase(phase, num):
 
 
 @cuda.jit("void(float64[:], float64, int64)")
-def init_path_len(path_len, length, num):
+def init_scalar_grid(scalar_grid, scalar, num):
     idx = cuda.grid(1)
     if idx < num:
-        path_len[idx] = length
+        scalar_grid[idx] = scalar
 
+
+@cuda.jit("void(float64[:,:], float64[:], int64, int64)")
+def init_vector_grid(vector_grid, vector, vec_size, num):
+    idx = cuda.grid(1)
+    if idx < num:
+        for vec_idx in range(vec_size):
+            vector_grid[idx, vec_idx] = vector[vec_idx]
 
 ###################################################################################################
 #          Elementwise operation
