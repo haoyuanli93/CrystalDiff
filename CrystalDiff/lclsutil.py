@@ -9,6 +9,13 @@ other modules can depend on this module.
 
 
 # --------------------------------------------------------------
+#           Calculate the light path
+# --------------------------------------------------------------
+def get_light_path(grating_1, crystal_list_1, grating_2, crystal_list_2, ):
+    pass
+
+
+# --------------------------------------------------------------
 #              Setup crystals
 # --------------------------------------------------------------
 def get_crystal_list(num, hlen_vals, theta_vals, rho_vals, tau_vals, surface_points,
@@ -114,7 +121,6 @@ def get_intersection_point(kin_vec, init_point, crystal_list):
 
     # Loop through all the reflections
     for idx in range(reflect_num):
-
         # Get the intersection point
         intersect_tmp = util.get_intersection_point(s=s,
                                                     k=k,

@@ -231,19 +231,19 @@ def get_output_wave_vector(k0_grid, k_grid, crystal_h, crystal_normal):
             "epsilon_grid": epsilon_grid}
 
 
-def get_input_wave_vector(kh_grid, k_grid, crystal_h, z):
+def get_input_wave_vector(kh_grid, k_grid, crystal_h, crystal_normal):
     """
     Given the output wave vector, derive the corresponding incident wave vector.
     :param kh_grid:
     :param k_grid:
     :param crystal_h:
-    :param z:
+    :param crystal_normal:
     :return:
     """
     rho_h_grid = get_rho_h_3d(kh_grid=kh_grid,
                               k_grid=k_grid,
                               crystal_h=crystal_h,
-                              crystal_normal=z)
+                              crystal_normal=crystal_normal)
 
     epsilon_grid = get_epsilon_3d(kh_grid=kh_grid,
                                   k_grid=k_grid,
@@ -252,13 +252,13 @@ def get_input_wave_vector(kh_grid, k_grid, crystal_h, z):
     momentum_transfer = get_momentum_transfer_reverse(k_grid=k_grid,
                                                       rho_h_grid=rho_h_grid,
                                                       epsilon_grid=epsilon_grid)
-    momentum_transfer = np.multiply(z[np.newaxis, :], momentum_transfer[:, np.newaxis])
+    momentum_transfer = np.multiply(crystal_normal[np.newaxis, :], momentum_transfer[:, np.newaxis])
 
     # get the incident wave vector
     k0_grid = kh_grid - crystal_h[np.newaxis, :] - momentum_transfer
 
-    gamma_0_grid = get_gamma_0_3d(k0_grid=k0_grid, k_grid=k_grid, crystal_normal=z)
-    gamma_h_grid = get_gamma_h_3d(k0_grid=k0_grid, k_grid=k_grid, crystal_normal=z,
+    gamma_0_grid = get_gamma_0_3d(k0_grid=k0_grid, k_grid=k_grid, crystal_normal=crystal_normal)
+    gamma_h_grid = get_gamma_h_3d(k0_grid=k0_grid, k_grid=k_grid, crystal_normal=crystal_normal,
                                   crystal_h=crystal_h)
     alpha_grid = get_alpha_3d(k0_grid=k0_grid,
                               k_grid=k_grid,
@@ -349,3 +349,29 @@ def get_2d_sigma_matrix(density_2d, x_values, y_values):
     eig, eig_vals = np.linalg.eig(sigma_mat)
 
     return sigma_mat, eig, eig_vals
+
+
+# ---------------------------------------------------------------------------
+#                     Grating
+# ---------------------------------------------------------------------------
+def get_grating_output_momentum(grating_wavenum, k_vec):
+    """
+    Calculate output momentum of the grating with the specified wave number and
+    the corresponding incident k_vec
+
+    :param grating_wavenum:
+    :param k_vec:
+    :return:
+    """
+    wavenum_reshape = np.reshape(grating_wavenum, (1, 3))
+    return k_vec + wavenum_reshape
+
+
+def get_grating_wavenumber_1d(direction, period, order):
+    """
+
+    :param direction:
+    :param period:
+    :return:
+    """
+    return order * direction * 2. * np.pi / period
