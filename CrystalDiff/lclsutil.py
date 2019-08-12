@@ -8,6 +8,66 @@ other modules can depend on this module.
 """
 
 
+def get_split_delay_output_frame(displacement, obvservation, pulse, crystal_list_1, crystal_list_2, grating_pair):
+    """
+    Go to the output grating position.
+
+    :param displacement:
+    :param obvservation:
+    :param pulse:
+    :param crystal_list_1:
+    :param crystal_list_2:
+    :param grating_pair:
+    :return:
+    """
+    # ------------------------------
+    # Shift the position
+    # ------------------------------
+    pulse.x0 += displacement
+
+    # Shift the crystal
+    for my_crystal in crystal_list_1:
+        my_crystal.shift(displacement=displacement)
+
+    # Shift the crystal
+    for my_crystal in crystal_list_2:
+        my_crystal.shift(displacement=displacement)
+
+    # Shift the observation position
+    obvservation += displacement
+
+    # Shift the grating
+    for grating in grating_pair:
+        grating.shift(displacement=displacement)
+
+    return pulse, crystal_list_1, crystal_list_2, grating_pair, obvservation
+
+
+def get_delay_line_angles(angle_offset, theta, rho, inclined_angle=0., asymmetric_angle=0.):
+    """
+
+    :param angle_offset:
+    :param theta:
+    :param rho:
+    :param inclined_angle:
+    :param asymmetric_angle:
+    :return:
+    """
+    theta_vals = np.array([theta,
+                           np.pi + theta,
+                           - theta,
+                           np.pi - theta]) + angle_offset
+
+    rho_vals = np.array([rho,
+                         np.pi + rho - asymmetric_angle,
+                         - rho,
+                         np.pi - rho + asymmetric_angle]) + angle_offset
+
+    tau_vals = np.array([0., inclined_angle, - inclined_angle, 0.])
+
+    return theta_vals, rho_vals, tau_vals
+
+
 # --------------------------------------------------------------
 #           Calculate the light path
 # --------------------------------------------------------------

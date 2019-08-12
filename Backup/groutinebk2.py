@@ -5,9 +5,9 @@ from pyculib import fft as cufft
 from CrystalDiff import gfun
 
 
-def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, observation, my_pulse,
-                                        kx_grid, ky_grid, kz_grid, number_x, number_y, number_z,
-                                        z_idx_range, num1, num2, d_num=512):
+def get_split_delay_field_branch(grating_pair, channel_cuts, total_path, observation, my_pulse,
+                                 kx_grid, ky_grid, kz_grid, number_x, number_y, number_z,
+                                 z_idx_range, num1, num2, d_num=512):
     # Get the inital points for the fft data collection
     idx_start_1 = number_z - num1
     idx_start_2 = 0
@@ -18,6 +18,8 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     efield_3d = np.zeros((number_x, number_y, z_idx_range, 3), dtype=np.complex128)
     efield_spec_3d = np.zeros((number_x, number_y, z_idx_range, 3), dtype=np.complex128)
+    reflect_pi_3d = np.zeros((number_x, number_y, z_idx_range), dtype=np.complex128)
+    reflect_sigma_3d = np.zeros((number_x, number_y, z_idx_range), dtype=np.complex128)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #  [2D slices]
@@ -35,6 +37,12 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
     cuda_x_spec_2d = cuda.to_device(x_spec_2d)
     cuda_y_spec_2d = cuda.to_device(y_spec_2d)
     cuda_z_spec_2d = cuda.to_device(z_spec_2d)
+
+    reflect_pi_2d = np.ascontiguousarray(np.zeros((number_y, z_idx_range), dtype=np.complex128))
+    reflect_sigma_2d = np.ascontiguousarray(np.zeros((number_y, z_idx_range), dtype=np.complex128))
+
+    cuda_reflect_pi_2d = cuda.to_device(reflect_pi_2d)
+    cuda_reflect_sigma_2d = cuda.to_device(reflect_sigma_2d)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #  [1D slices] Various intersection points, path length and phase
@@ -54,10 +62,14 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
     # [1D slices] reflect and time response
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     reflect_pi = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
+    reflect_total_pi = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
     reflect_sigma = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
+    reflect_total_sigma = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
 
     cuda_reflect_pi = cuda.to_device(reflect_pi)
+    cuda_reflect_total_pi = cuda.to_device(reflect_total_pi)
     cuda_reflect_sigma = cuda.to_device(reflect_sigma)
+    cuda_reflect_total_sigma = cuda.to_device(reflect_total_sigma)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # [1D slices] Vector field
@@ -278,15 +290,40 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
                                                         channel_cuts[crystal_idx].chih_pi,
                                                         channel_cuts[crystal_idx].chihbar_pi,
                                                         number_z)
-
+                gfun.scalar_scalar_multiply_complex[b_num, d_num](cuda_reflect_sigma,
+                                                                  cuda_reflect_total_sigma,
+                                                                  cuda_reflect_total_sigma,
+                                                                  number_z)
+                gfun.scalar_scalar_multiply_complex[b_num, d_num](cuda_reflect_pi,
+                                                                  cuda_reflect_total_pi,
+                                                                  cuda_reflect_total_pi,
+                                                                  number_z)
             # Diffracted by the second grating
             gfun.add_vector[b_num, d_num](cuda_kin_grid,
                                           cuda_kin_grid,
-                                          grating_pair[1].wave_vector,
+                                          grating_pair[0].wave_vector,
                                           number_z)
+            # --------------
+            # Save the reflect
+            # --------------
+            gfun.fill_column_complex_fftshift[b_num, d_num](cuda_reflect_sigma_2d,
+                                                            cuda_reflect_total_sigma,
+                                                            y_idx,
+                                                            idx_start_1,
+                                                            num1,
+                                                            idx_start_2,
+                                                            num2)
+
+            gfun.fill_column_complex_fftshift[b_num, d_num](cuda_reflect_pi_2d,
+                                                            cuda_reflect_total_pi,
+                                                            y_idx,
+                                                            idx_start_1,
+                                                            num1,
+                                                            idx_start_2,
+                                                            num2)
 
             # --------------------------------------------------------------------
-            #  Step 8. Goes from the reciprocal space to the real space
+            #  Step 6. Goes from the reciprocal space to the real space
             # --------------------------------------------------------------------
             # Save the result to the total reflect
             gfun.vector_expansion[b_num, d_num](cuda_spec_vec,
@@ -357,6 +394,8 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
         cuda_x_spec_2d.to_host()
         cuda_y_spec_2d.to_host()
         cuda_z_spec_2d.to_host()
+        cuda_reflect_sigma_2d.to_host()
+        cuda_reflect_pi_2d.to_host()
 
         # Update the 3D variables.
         efield_3d[x_idx, :, :, 0] = x_field_2d
@@ -366,6 +405,9 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
         efield_spec_3d[x_idx, :, :, 1] = y_spec_2d
         efield_spec_3d[x_idx, :, :, 2] = z_spec_2d
 
+        reflect_pi_3d[x_idx, :, :] = reflect_pi_2d
+        reflect_sigma_3d[x_idx, :, :] = reflect_sigma_2d
+
         # Move the variables back to the GPU
         cuda_x_field_2d = cuda.to_device(x_field_2d)
         cuda_y_field_2d = cuda.to_device(y_field_2d)
@@ -373,6 +415,8 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
         cuda_x_spec_2d = cuda.to_device(x_spec_2d)
         cuda_y_spec_2d = cuda.to_device(y_spec_2d)
         cuda_z_spec_2d = cuda.to_device(z_spec_2d)
+        cuda_reflect_sigma_2d = cuda.to_device(reflect_sigma_2d)
+        cuda_reflect_pi_2d = cuda.to_device(reflect_pi_2d)
 
     # Move the arrays back to the device for debugging.
     cuda_source_points.to_host()
@@ -386,6 +430,8 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
 
     cuda_reflect_pi.to_host()
     cuda_reflect_sigma.to_host()
+    cuda_reflect_total_pi.to_host()
+    cuda_reflect_total_sigma.to_host()
 
     cuda_coef.to_host()
     cuda_spec_x.to_host()
@@ -406,14 +452,18 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
                   "jacob_grid": jacob_grid}
 
     result_3d_dict = {"efield_3d": efield_3d,
-                      "efield_spec_3d": efield_spec_3d}
+                      "efield_spec_3d": efield_spec_3d,
+                      "reflect_pi_3d": reflect_pi_3d,
+                      "reflect_sigma_3d": reflect_sigma_3d}
 
     result_2d_dict = {"x_field_2d": x_field_2d,
                       "y_field_2d": y_field_2d,
                       "z_field_2d": z_field_2d,
                       "x_spec_2d": x_spec_2d,
                       "y_spec_2d": y_spec_2d,
-                      "z_spec_2d": z_spec_2d}
+                      "z_spec_2d": z_spec_2d,
+                      "reflect_pi_2d": reflect_pi_2d,
+                      "reflect_sigma_2d": reflect_sigma_2d}
 
     return result_3d_dict, result_2d_dict, check_dict
 

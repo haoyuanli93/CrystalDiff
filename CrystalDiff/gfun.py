@@ -101,6 +101,7 @@ def init_vector_grid(vector_grid, vector, vec_size, num):
         for vec_idx in range(vec_size):
             vector_grid[idx, vec_idx] = vector[vec_idx]
 
+
 ###################################################################################################
 #          Elementwise operation
 ###################################################################################################
@@ -144,6 +145,25 @@ def vector_expansion(vector, x, y, z, num):
         x[idx] = vector[idx, 0]
         y[idx] = vector[idx, 1]
         z[idx] = vector[idx, 2]
+
+
+@cuda.jit('void'
+          '(float64[:,:], float64[:,:], float64[:], int64)')
+def add_vector(vec_out_grid, vec_in_grid, delta_vec, num):
+    """
+
+    :param vec_out_grid:
+    :param delta_vec:
+    :param vec_in_grid:
+    :param num:
+    :return:
+    """
+    # Step 0: Get the cuda grid idx
+    idx = cuda.grid(1)
+    if idx < num:
+        vec_out_grid[idx, 0] = vec_in_grid[idx, 0] - delta_vec[0]
+        vec_out_grid[idx, 1] = vec_in_grid[idx, 1] - delta_vec[1]
+        vec_out_grid[idx, 2] = vec_in_grid[idx, 2] - delta_vec[2]
 
 
 ###################################################################################################

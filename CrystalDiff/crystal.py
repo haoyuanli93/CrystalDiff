@@ -126,6 +126,8 @@ class SinusoidalPhaseGrating:
         self.period = 0.1239841973876029  # (um)
         self.direction = np.array([0., 1., 0.], dtype=np.float64)
         self.order = 1.
+        self.surface_point = np.array([0., 0., 3e7], dtype=np.float64)
+        self.normal = np.array([0., 0., 1.], dtype=np.float64)
 
         # TODO: Set a more realistic way to calculate the phase contrast
         self.phase_contrast = np.pi
@@ -170,3 +172,12 @@ class SinusoidalPhaseGrating:
             self.update_wavevector_and_coef()
         else:
             raise Exception("The parameter order has to be an integer.")
+
+    def set_surface_point(self, surface_point):
+        self.surface_point = surface_point
+
+    def set_normal(self, normal):
+        self.normal = normal / util.l2_norm(normal)
+
+    def shift(self, displacement):
+        self.surface_point += displacement
