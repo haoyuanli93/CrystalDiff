@@ -5,7 +5,7 @@ fs, um are the units
 """
 
 import numpy as np
-
+import scipy.special as ss
 from CrystalDiff import util
 
 hbar = util.hbar  # This is the reduced planck constant in keV/fs
@@ -119,3 +119,54 @@ class CrystalBlock3D:
         # The shift of the space does not change the reciprocal lattice and the normal direction
         self.h = np.ascontiguousarray(rot_mat.dot(self.h))
         self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
+
+
+class SinusoidalPhaseGrating:
+    def __init__(self):
+        self.period = 0.1239841973876029  # (um)
+        self.direction = np.array([0., 1., 0.], dtype=np.float64)
+        self.order = 1.
+
+        # TODO: Set a more realistic way to calculate the phase contrast
+        self.phase_contrast = np.pi
+
+        # Derived parameter
+        self.coef = ss.jv(self.order, self.phase_contrast / 2.)  # The coefficient for this order
+        self.wave_vector = self.order * self.direction * np.pi * 2. / self.period
+
+        # Calculate the wave vector
+        self.update_wavevector_and_coef()
+
+    def update_wavevector_and_coef(self):
+        self.wave_vector = self.order * self.direction * np.pi * 2. / self.period
+        self.coef = ss.jv(self.order, self.phase_contrast / 2.)  # The coefficient for this order
+
+    def set_period(self, period):
+        self.period = period
+
+        # Update the wave vector
+        self.update_wavevector_and_coef()
+
+    def set_direction(self, direction):
+        self.direction = direction
+
+        # Update the wave vector
+        self.update_wavevector_and_coef()
+
+    def set_order(self, order):
+
+        if isinstance(order, int):
+            self.order = float(order)
+
+            # Update the wave vector
+            self.update_wavevector_and_coef()
+        elif isinstance(order, float):
+            print("The order of the diffraction has to be an integer.")
+            print("Therefore the approximated value {} is used instead of {}.".format(int(order), order))
+
+            self.order = float(int(order))
+
+            # Update the wave vector
+            self.update_wavevector_and_coef()
+        else:
+            raise Exception("The parameter order has to be an integer.")

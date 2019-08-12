@@ -372,6 +372,7 @@ def get_grating_wavenumber_1d(direction, period, order):
 
     :param direction:
     :param period:
+    :param order:
     :return:
     """
     return order * direction * 2. * np.pi / period

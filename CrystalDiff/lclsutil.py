@@ -11,8 +11,94 @@ other modules can depend on this module.
 # --------------------------------------------------------------
 #           Calculate the light path
 # --------------------------------------------------------------
-def get_light_path(grating_1, crystal_list_1, grating_2, crystal_list_2, ):
-    pass
+def get_light_path(pulse_obj, grating_list, crystal_list_1, path_list_1, crystal_list_2, path_list_2):
+    """
+    In this function, the first branch is the upper branch in the following diagram.
+    The second branch is the lower branch in the following diagram.
+
+                |                -            |
+                |           -        -        |
+                |       -               -     |     This is branch 1
+                |   -     +1               -  |
+    ------------|                             |---------------
+                |   -     -1               -  |
+                |       -              -      |     This is branch 2
+                |           -       -         |
+                |               -             |
+
+    :param pulse_obj:
+    :param grating_list:
+    :param crystal_list_1:
+    :param path_list_1:
+    :param crystal_list_2:
+    :param path_list_2:
+    :return:
+    """
+    (intersect_branch_1,
+     kout_branch_1) = get_light_path_branch(pulse_obj=pulse_obj,
+                                            grating_list=grating_list,
+                                            path_list=path_list_1,
+                                            crystal_list=crystal_list_1,
+                                            branch=1)
+
+    (intersect_branch_2,
+     kout_branch_2) = get_light_path_branch(pulse_obj=pulse_obj,
+                                            grating_list=grating_list,
+                                            path_list=path_list_2,
+                                            crystal_list=crystal_list_2,
+                                            branch=-1)
+
+    return intersect_branch_1, kout_branch_1, intersect_branch_2, kout_branch_2
+
+
+def get_light_path_branch(pulse_obj, grating_list, path_list, crystal_list, branch=1):
+    """
+    Get the light path for one of the branch.
+
+    :param pulse_obj:
+    :param grating_list:
+    :param path_list:
+    :param crystal_list:
+    :param branch:
+    :return:
+    """
+    kin = np.reshape(pulse_obj.k0, (1, 3))
+
+    # Get kout from the first grating
+    grating_list[0].set_order(branch)
+    kout_tmp_1 = util.get_grating_output_momentum(grating_wavenum=grating_list[0].wave_vector,
+                                                  k_vec=kin)
+    # Get the intersection point with the first crystal
+    intersect_1 = path_list[0] * kout_tmp_1[0] / util.l2_norm(kout_tmp_1[0])
+
+    # Get the first intersection point on the first crystal
+    path_tmp = np.zeros(4)
+    path_tmp[1:] = path_list[1:-2]
+    intersection_points, kout_vec_list = get_point_with_definite_path(kin_vec=kout_tmp_1,
+                                                                      path_sections=path_tmp,
+                                                                      crystal_list=crystal_list)
+    intersection_points += intersect_1
+    # Calculate the change before the grating
+    intersect_2 = intersection_points[-1] + path_list[-2] * kout_vec_list[-1] / util.l2_norm(kout_vec_list[-1])
+
+    # Get the final output momentum
+    grating_list[1].set_order(-branch)
+    kout_tmp_2 = util.get_grating_output_momentum(grating_wavenum=grating_list[1].wave_vector,
+                                                  k_vec=kout_vec_list[-1])
+    intersect_final = intersect_2 + path_list[-1] * kout_tmp_2[0] / util.l2_norm(kout_tmp_2[0])
+
+    # Get branch 1 info
+    intersect_branch = np.vstack((np.zeros(3, dtype=np.float64),
+                                  intersect_1,
+                                  intersection_points,
+                                  intersect_2,
+                                  intersect_final))
+    kout_branch = np.vstack((pulse_obj.k0,
+                             kout_tmp_1,
+                             kout_vec_list,
+                             kout_tmp_2))
+
+    return intersect_branch, kout_branch
 
 
 # --------------------------------------------------------------
