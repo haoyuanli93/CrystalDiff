@@ -376,3 +376,16 @@ def get_grating_wavenumber_1d(direction, period, order):
     :return:
     """
     return order * direction * 2. * np.pi / period
+
+
+def get_grating_period(dtheta, klen_in):
+    """
+    Derive the grating period based on the deviation angle and the incident wave number.
+    Here, one assume that the incident wave vector is perpendicular to the the grating surface.
+
+    :param dtheta:
+    :param klen_in:
+    :return:
+    """
+    period = 2 * np.pi / klen_in / np.tan(dtheta)
+    return period

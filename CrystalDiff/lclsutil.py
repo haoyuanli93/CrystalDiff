@@ -8,6 +8,20 @@ other modules can depend on this module.
 """
 
 
+def get_split_delay_configuration(delay_time, fix_branch_path, var_branch_path,
+                                  crystal_list_1, crystal_list_2, grating_pair):
+    """
+
+    :param delay_time:
+    :param fix_branch_path:
+    :param var_branch_path:
+    :param crystal_list_1:
+    :param crystal_list_2:
+    :param grating_pair:
+    :return:
+    """
+    pass
+
 def get_split_delay_output_frame(displacement, obvservation, pulse, crystal_list_1, crystal_list_2, grating_pair):
     """
     Go to the output grating position.

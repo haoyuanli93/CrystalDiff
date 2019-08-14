@@ -9,6 +9,7 @@ two_pi = 2 * pi
 
 class GaussianPulse3D:
     def __init__(self):
+        self.klen0 = 100.
         self.x0 = np.zeros(3, dtype=np.float64)
         self.k0 = np.zeros(3, dtype=np.float64)
         self.n = np.zeros(3, dtype=np.float64)
@@ -31,6 +32,56 @@ class GaussianPulse3D:
 
         # Polarization
         self.polar = np.array([1., 0., 0.], dtype=np.complex128)
+
+    def set_pulse_properties(self, central_energy, polar, sigma_x, sigma_y, sigma_z, x0):
+        """
+        Set the pulse properties assuming that the pulse is propagating along
+        the positive z direction.
+        :param central_energy:
+        :param polar:
+        :param sigma_x:
+        :param sigma_y:
+        :param sigma_z:
+        :param x0:
+        :return:
+        """
+        # Get the corresponding wave vector
+        self.klen0 = util.kev_to_wave_number(energy=central_energy)
+
+        self.polar = np.array(np.reshape(polar, (3,)),
+                              dtype=np.complex128)
+
+        self.k0 = np.array([0., 0., self.klen0])
+        self.n = self.k0 / util.l2_norm(self.k0)
+        self.omega0 = self.klen0 * util.c
+        self.x0 = x0
+
+        # Initialize the sigma matrix
+        self.set_sigma_mat(sigma_x=sigma_x,
+                           sigma_y=sigma_y,
+                           sigma_z=sigma_z)
+
+        # Normalize the pulse such that the incident total energy is 100uJ.
+        self.scaling = self.sigma_x * self.sigma_y * self.sigma_z * (util.c ** 3) * np.power(np.pi, 1.5)
+        self.scaling = complex(1e14 / self.scaling)
+
+    def set_sigma_mat(self, sigma_x, sigma_y, sigma_z):
+        """
+        Notice that this function assumes that the pulse propagates long the z direction.
+
+        :param sigma_x:
+        :param sigma_y:
+        :param sigma_z:
+        :return:
+        """
+
+        self.sigma_x = sigma_x  # sigma_t
+        self.sigma_y = sigma_y  # sigma_t  # fs
+        self.sigma_z = sigma_z  # fs
+        self.sigma_mat = np.diag(np.array([self.sigma_x ** 2,
+                                           self.sigma_y ** 2,
+                                           self.sigma_z ** 2], dtype=np.float64))
+        self.sigma_mat *= util.c ** 2
 
 
 # --------------------------------------------------------------
