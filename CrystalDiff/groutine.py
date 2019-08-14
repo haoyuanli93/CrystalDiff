@@ -54,10 +54,14 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
     # [1D slices] reflect and time response
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     reflect_pi = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
+    reflect_total_pi = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
     reflect_sigma = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
+    reflect_total_sigma = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
 
     cuda_reflect_pi = cuda.to_device(reflect_pi)
+    cuda_reflect_total_pi = cuda.to_device(reflect_total_pi)
     cuda_reflect_sigma = cuda.to_device(reflect_sigma)
+    cuda_reflect_total_sigma = cuda.to_device(reflect_total_sigma)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # [1D slices] Vector field
@@ -147,13 +151,19 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
 
             gfun.add_vector[b_num, d_num](cuda_kin_grid,
                                           cuda_kin_grid,
-                                          -grating_pair[1].wave_vector,
+                                          - grating_pair[1].wave_vector,
                                           number_z)
+
+            # Update the wave number
+            gfun.get_vector_length[b_num, d_num](cuda_klen_grid,
+                                                 cuda_kin_grid,
+                                                 3,
+                                                 number_z)
 
             # --------------------------------------------------------------------
             #  Step 3. Get k_in mesh and the jacobian
             # --------------------------------------------------------------------
-            for crystal_idx in range(3, - 1, -1):
+            for crystal_idx in [3, 2, 1, 0]:
                 # Get the intersection point from the final point
                 gfun.get_intersection_point[b_num, d_num](cuda_remain_path,
                                                           cuda_intersect,
@@ -175,7 +185,7 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
                                                         channel_cuts[crystal_idx].dot_hn,
                                                         channel_cuts[crystal_idx].h_square,
                                                         number_z)
-
+            # """
             # --------------------------------------------------------------------
             #  Step 4. Back propagate from the First grating
             # --------------------------------------------------------------------
@@ -192,9 +202,14 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
 
             gfun.add_vector[b_num, d_num](cuda_kin_grid,
                                           cuda_kin_grid,
-                                          -grating_pair[0].wave_vector,
+                                          - grating_pair[0].wave_vector,
                                           number_z)
 
+            # Update the wave number
+            gfun.get_vector_length[b_num, d_num](cuda_klen_grid,
+                                                 cuda_kin_grid,
+                                                 3,
+                                                 number_z)
             # --------------------------------------------------------------------
             #  Step 5. Get the Fourier coefficients
             # --------------------------------------------------------------------
@@ -258,6 +273,12 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
                                           grating_pair[0].wave_vector,
                                           number_z)
 
+            # Update the wave number
+            gfun.get_vector_length[b_num, d_num](cuda_klen_grid,
+                                                 cuda_kin_grid,
+                                                 3,
+                                                 number_z)
+
             # Diffracted by the delay lines
             for crystal_idx in range(4):
                 gfun.get_bragg_reflection[b_num, d_num](cuda_reflect_sigma,
@@ -278,12 +299,25 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
                                                         channel_cuts[crystal_idx].chih_pi,
                                                         channel_cuts[crystal_idx].chihbar_pi,
                                                         number_z)
-
+                gfun.scalar_scalar_multiply_complex[b_num, d_num](cuda_reflect_sigma,
+                                                                  cuda_reflect_total_sigma,
+                                                                  cuda_reflect_total_sigma,
+                                                                  number_z)
+                gfun.scalar_scalar_multiply_complex[b_num, d_num](cuda_reflect_pi,
+                                                                  cuda_reflect_total_pi,
+                                                                  cuda_reflect_total_pi,
+                                                                  number_z)
             # Diffracted by the second grating
             gfun.add_vector[b_num, d_num](cuda_kin_grid,
                                           cuda_kin_grid,
                                           grating_pair[1].wave_vector,
                                           number_z)
+
+            # Update the wave number
+            gfun.get_vector_length[b_num, d_num](cuda_klen_grid,
+                                                 cuda_kin_grid,
+                                                 3,
+                                                 number_z)
 
             # --------------------------------------------------------------------
             #  Step 8. Goes from the reciprocal space to the real space
@@ -346,7 +380,7 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
                                                             num1,
                                                             idx_start_2,
                                                             num2)
-
+        # """
         ###################################################################################################
         #                                  Finish
         ###################################################################################################
@@ -386,6 +420,8 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
 
     cuda_reflect_pi.to_host()
     cuda_reflect_sigma.to_host()
+    cuda_reflect_total_pi.to_host()
+    cuda_reflect_total_sigma.to_host()
 
     cuda_coef.to_host()
     cuda_spec_x.to_host()
@@ -403,7 +439,12 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
                   "source_points": source_points,
                   "remaining_length": remaining_length,
                   "phase_grid": phase_grid,
-                  "jacob_grid": jacob_grid}
+                  "jacob_grid": jacob_grid,
+                  "reflectivity_pi": reflect_pi,
+                  "reflectivity_sigma": reflect_sigma,
+                  "reflectivity_pi_tot": reflect_total_pi,
+                  "reflectivity_sigma_tot": reflect_total_sigma
+                  }
 
     result_3d_dict = {"efield_3d": efield_3d,
                       "efield_spec_3d": efield_spec_3d}

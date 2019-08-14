@@ -150,7 +150,7 @@ def get_light_path_branch(pulse_obj, grating_list, path_list, crystal_list, bran
     # Get branch 1 info
     intersect_branch = np.vstack((np.zeros(3, dtype=np.float64),
                                   intersect_1,
-                                  intersection_points,
+                                  intersection_points[1:],  # The first point is redundant.
                                   intersect_2,
                                   intersect_final))
     kout_branch = np.vstack((pulse_obj.k0,

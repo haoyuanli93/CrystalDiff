@@ -161,9 +161,29 @@ def add_vector(vec_out_grid, vec_in_grid, delta_vec, num):
     # Step 0: Get the cuda grid idx
     idx = cuda.grid(1)
     if idx < num:
-        vec_out_grid[idx, 0] = vec_in_grid[idx, 0] - delta_vec[0]
-        vec_out_grid[idx, 1] = vec_in_grid[idx, 1] - delta_vec[1]
-        vec_out_grid[idx, 2] = vec_in_grid[idx, 2] - delta_vec[2]
+        vec_out_grid[idx, 0] = vec_in_grid[idx, 0] + delta_vec[0]
+        vec_out_grid[idx, 1] = vec_in_grid[idx, 1] + delta_vec[1]
+        vec_out_grid[idx, 2] = vec_in_grid[idx, 2] + delta_vec[2]
+
+
+@cuda.jit('void'
+          '(float64[:], float64[:,:], int64, int64)')
+def get_vector_length(vec_len_grid, vec_grid, vec_dim, num):
+    """
+
+    :param vec_len_grid:
+    :param vec_grid:
+    :param vec_dim:
+    :param num:
+    :return:
+    """
+    # Step 0: Get the cuda grid idx
+    idx = cuda.grid(1)
+    if idx < num:
+        vec_len_grid[idx] = 0.
+        for x in range(vec_dim):
+            vec_len_grid[idx] += vec_grid[idx, x] ** 2
+        vec_len_grid[idx] = math.sqrt(vec_len_grid[idx])
 
 
 ###################################################################################################
