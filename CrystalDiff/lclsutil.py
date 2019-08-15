@@ -9,18 +9,74 @@ other modules can depend on this module.
 
 
 def get_split_delay_configuration(delay_time, fix_branch_path, var_branch_path,
-                                  crystal_list_1, crystal_list_2, grating_pair):
+                                  fix_branch_crystal, var_branch_crystal, grating_pair, pulse_obj):
     """
+    This function automatically change the configurations of the variable branch to
+    match the delay time.
 
     :param delay_time:
     :param fix_branch_path:
     :param var_branch_path:
-    :param crystal_list_1:
-    :param crystal_list_2:
+    :param fix_branch_crystal:
+    :param var_branch_crystal:
     :param grating_pair:
+    :param pulse_obj:
     :return:
     """
-    pass
+    # ---------------------------------------------------------
+    # Step 1 : Get the original path
+    # ---------------------------------------------------------
+
+    # First check the lenght of the path since it might different
+    (intersect_fixed,
+     kout_fixed) = get_light_path_branch(pulse_obj=pulse_obj,
+                                         grating_list=grating_pair,
+                                         path_list=fix_branch_path,
+                                         crystal_list=fix_branch_crystal,
+                                         branch=-1)  # By default, -1 corresponds to the fixed branch.
+
+    # ----------------------------------------------------------
+    # Step 2 : Tune the final section of the fixed branch
+    # to make sure the intersection point is close to the z axis
+    # ----------------------------------------------------------
+
+    # Get the new length
+    new_length = - (intersect_fixed[-3][0] * kout_fixed[-2][0] +
+                    intersect_fixed[-3][1] * kout_fixed[-2][1]) / (kout_fixed[-2][0] ** 2 + kout_fixed[-2][1] ** 2)
+    new_length *= util.l2_norm(kout_fixed[-2])
+
+    # Replace the old path lengths with the new one
+    fix_branch_path[-2] = new_length
+
+    # ----------------------------------------------------------
+    # Step 3 : Tune the path sections of the variable branch
+    # ----------------------------------------------------------
+    tmp = np.sum(fix_branch_path[:5])
+    var_branch_path[-2] = tmp - np.sum(var_branch_path[:4])
+    var_branch_path[-1] = fix_branch_path[-1]
+
+    # ----------------------------------------------------------
+    # Step 3 : Adjust the path sections to match the delay time.
+    # ----------------------------------------------------------
+    # Find the momentum information
+    (intersect_var,
+     kout_var) = get_light_path_branch(pulse_obj=pulse_obj,
+                                       grating_list=grating_pair,
+                                       path_list=var_branch_path,
+                                       crystal_list=var_branch_crystal,
+                                       branch=1)  # By default, -1 corresponds to the fixed branch.
+
+    delay_length = delay_time * util.c
+    cos_theta = np.dot(kout_var[1], kout_var[2]) / util.l2_norm(kout_var[1]) / util.l2_norm(kout_var[2])
+    delta = delay_length / 2. / (1 - cos_theta)
+
+    # Change the variable path sections with the calculated length change
+    var_branch_path[1] += delta
+    var_branch_path[3] += delta
+    var_branch_path[2] -= 2 * delta * cos_theta
+
+    return var_branch_path, fix_branch_path
+
 
 def get_split_delay_output_frame(displacement, obvservation, pulse, crystal_list_1, crystal_list_2, grating_pair):
     """

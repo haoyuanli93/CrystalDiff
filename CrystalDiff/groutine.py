@@ -5,7 +5,7 @@ from pyculib import fft as cufft
 from CrystalDiff import gfun
 
 
-def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, observation, my_pulse,
+def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, observation, my_pulse, delay_time,
                                         kx_grid, ky_grid, kz_grid, number_x, number_y, number_z,
                                         z_idx_range, num1, num2, d_num=512):
     # Get the inital points for the fft data collection
@@ -216,7 +216,7 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, 
             # Calculate the corresponding coefficient in the incident pulse
             gfun.get_gaussian_pulse_spectrum[b_num, d_num](cuda_coef,
                                                            cuda_kin_grid,
-                                                           0.,
+                                                           float(delay_time),
                                                            my_pulse.sigma_mat,
                                                            my_pulse.scaling,
                                                            np.zeros(3, dtype=np.float64),
