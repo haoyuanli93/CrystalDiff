@@ -181,3 +181,14 @@ class SinusoidalPhaseGrating:
 
     def shift(self, displacement):
         self.surface_point += displacement
+
+    def rotate(self, rot_mat):
+        # change the position
+        self.surface_point = np.ascontiguousarray(rot_mat.dot(self.surface_point))
+
+        # The shift of the space does not change the reciprocal lattice and the normal direction
+        self.direction = np.ascontiguousarray(rot_mat.dot(self.direction))
+        self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
+
+        # Change the direction of the momentum transfer accordingly
+        self.update_wavevector_and_coef()

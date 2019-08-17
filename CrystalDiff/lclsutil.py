@@ -113,6 +113,82 @@ def get_split_delay_output_frame(displacement, obvservation, pulse, crystal_list
     return pulse, crystal_list_1, crystal_list_2, grating_pair, obvservation
 
 
+def get_split_delay_output_frame_refined(kin, kout, aux, displacement,
+                                         observation, pulse,
+                                         crystal_list_1, crystal_list_2, grating_pair,
+                                         ):
+    """
+    Go to the position before the second grating.
+    
+    :param kin: 
+    :param kout: 
+    :param aux: 
+    :param displacement: 
+    :param observation: 
+    :param pulse: 
+    :param crystal_list_1: 
+    :param crystal_list_2: 
+    :param grating_pair: 
+    :return: 
+    """
+    # Get the rotation matrix
+    rot_mat_dict = get_rot_mat_dict(kin=kin, kout=kout, aux=aux)
+
+    # ------------------------------
+    # Shift the position
+    # ------------------------------
+    pulse.x0 += displacement
+
+    # Shift the crystal
+    for my_crystal in crystal_list_1:
+        my_crystal.shift(displacement=displacement)
+
+    # Shift the crystal
+    for my_crystal in crystal_list_2:
+        my_crystal.shift(displacement=displacement)
+
+    # Shift the observation position
+    observation += displacement
+
+    # Shift the grating
+    for grating in grating_pair:
+        grating.shift(displacement=displacement)
+
+    # ------------------------------
+    # Rotate
+    # ------------------------------
+    # Rotate the pulse
+    rot_mat = rot_mat_dict["Out-Pulse to In-Pulse"]
+    pulse.sigma_mat = np.dot(rot_mat.T, np.dot(pulse.sigma_mat, rot_mat))
+
+    # Change the polarization
+    pulse.polar = np.dot(rot_mat_dict["In-Pulse to Out-Pulse"], pulse.polar)
+
+    # Reference point of the pulse
+    pulse.x0 = rot_mat_dict["Device to Out-Pulse"].dot(pulse.x0)
+
+    # The central momentum of the pulse
+    pulse.k0 = rot_mat_dict["Device to Out-Pulse"].dot(pulse.k0)
+    pulse.n = pulse.k0 / util.l2_norm(pulse.k0)
+    pulse.omega0 = util.l2_norm(pulse.k0) * util.c
+
+    # Shift the crystal
+    for my_crystal in crystal_list_1:
+        my_crystal.rotate(rot_mat_dict["Device to Out-Pulse"])
+
+    # Shift the crystal
+    for my_crystal in crystal_list_2:
+        my_crystal.rotate(rot_mat_dict["Device to Out-Pulse"])
+
+    # Rotate the grating
+    for grating in grating_pair:
+        grating.rotate(displacement=displacement)
+
+    observation = rot_mat_dict["Device to Out-Pulse"].dot(observation)
+
+    return pulse, crystal_list_1, crystal_list_2, grating_pair, observation
+
+
 def get_delay_line_angles(angle_offset, theta, rho, inclined_angle=0., asymmetric_angle=0.):
     """
 
