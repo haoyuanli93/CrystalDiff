@@ -193,7 +193,7 @@ def get_single_branch_split_delay_field_before_grating2(grating_pair, channel_cu
             # Calculate the corresponding coefficient in the incident pulse
             gfun.get_gaussian_pulse_spectrum[b_num, d_num](cuda_coef,
                                                            cuda_kin_grid,
-                                                           float(delay_time),
+                                                               float(delay_time),
                                                            my_pulse.sigma_mat,
                                                            my_pulse.scaling,
                                                            np.zeros(3, dtype=np.float64),
