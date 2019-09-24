@@ -182,11 +182,11 @@ def get_split_delay_output_frame_refined(kin, kout, aux, displacement,
 
     # Rotate the grating
     for grating in grating_pair:
-        grating.rotate(displacement=displacement)
+        grating.rotate(rot_mat_dict["Device to Out-Pulse"])
 
     observation = rot_mat_dict["Device to Out-Pulse"].dot(observation)
 
-    return pulse, crystal_list_1, crystal_list_2, grating_pair, observation
+    return pulse, crystal_list_1, crystal_list_2, grating_pair, observation, rot_mat_dict
 
 
 def get_delay_line_angles(angle_offset, theta, rho, inclined_angle=0., asymmetric_angle=0.):
