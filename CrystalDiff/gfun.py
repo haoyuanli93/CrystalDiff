@@ -1,6 +1,7 @@
 import cmath
-import numpy as np
 import math
+
+import numpy as np
 from numba import cuda
 
 """
@@ -837,8 +838,98 @@ def get_square_pulse_spectrum_smooth(coef,
           '(complex128[:], float64[:,:],'
           'float64[:], float64, float64, float64, complex128, float64, '
           'int64)')
-def get_square_pulse_spectrum_smooth(coef,
-                                     k_vec,
-                                     k0, a_val, b_val, c_val, scaling, sigma,
-                                     num):
-    pass
+def get_square_grating_effect_non_zero(kout_grid, efield_grid,
+                                       klen_grid,
+                                       kin_grid,
+                                       grating_h, grating_n, grating_ab_ratio, order, grating_k,
+                                       num):
+    """
+    This function add the grating effect to the pulse. Including the phase change and the momentum change.
+
+    Notice that this function can not handle the zeroth order
+
+    :param kout_grid: The output momentum grid
+    :param efield_grid: The output coefficient for each monochromatic component
+    :param klen_grid: The length of each incident wave vector. Notice that this value will update for the grating.
+    :param kin_grid: The incident wave vector grid.
+    :param grating_h: The height vector of the grating
+    :param grating_n: The refraction index of the grating.
+    :param grating_ab_ratio: The b / (a + b) where a is the width of the groove while b the width of the tooth
+    :param order: The order of diffraction to investigate.
+    :param grating_k: The momentum transfer induced by the grating
+    :param num: The number of momenta to calculate.
+    :return: None
+    """
+
+    row = cuda.grid(1)
+    if row < num:
+        # Step 1: Calculate the effect of the grating on magnitude and phase for each component
+
+        # The argument for exp(ik(n-1)h)
+        nhk = complex(grating_h[0] * kin_grid[row, 0] +
+                      grating_h[1] * kin_grid[row, 1] +
+                      grating_h[2] * kin_grid[row, 2]) * (grating_n - complex(1.))
+
+        first_factor = complex(1.
+                               - np.cos(2 * np.pi * order * grating_ab_ratio),
+                               - np.sin(2 * np.pi * order * grating_ab_ratio))
+        second_factor = complex(1.) - complex(np.exp(-nhk.imag) * np.cos(nhk.real),
+                                              np.exp(-nhk.imag) * np.sin(nhk.real))
+
+        factor = 1.j / np.pi * first_factor * second_factor
+
+        # Step 2: Update the coefficient
+        efield_grid[row, 0] *= factor
+        efield_grid[row, 1] *= factor
+        efield_grid[row, 2] *= factor
+
+        # Step 3: Update the momentum and the length of the momentum
+        kout_grid[row, 0] = kin_grid[row, 0] + grating_k[0]
+        kout_grid[row, 1] = kin_grid[row, 1] + grating_k[1]
+        kout_grid[row, 2] = kin_grid[row, 2] + grating_k[2]
+
+        klen_grid[row] = np.sqrt(kout_grid[row, 0] * kout_grid[row, 0] +
+                                 kout_grid[row, 1] * kout_grid[row, 1] +
+                                 kout_grid[row, 2] * kout_grid[row, 2])
+
+
+@cuda.jit('void'
+          '(complex128[:], float64[:,:],'
+          'float64[:], float64, float64, float64, complex128, float64, '
+          'int64)')
+def get_square_grating_effect_zero(efield_grid,
+                                   kin_grid,
+                                   grating_h, grating_n, grating_ab_ratio,
+                                   num):
+    """
+    This function add the grating effect to the pulse. Including the phase change and the momentum change.
+
+    Notice that this function only handle the zeroth order
+
+    :param efield_grid: The output coefficient for each monochromatic component
+    :param kin_grid: The incident wave vector grid.
+    :param grating_h: The height vector of the grating
+    :param grating_n: The refraction index of the grating.
+    :param grating_ab_ratio: The b / (a + b) where a is the width of the groove while b the width of the tooth
+    :param num: The number of momenta to calculate.
+    :return: None
+    """
+
+    row = cuda.grid(1)
+    if row < num:
+        # Step 1: Calculate the effect of the grating on magnitude and phase for each component
+
+        # The argument for exp(ik(n-1)h)
+        nhk = complex(grating_h[0] * kin_grid[row, 0] +
+                      grating_h[1] * kin_grid[row, 1] +
+                      grating_h[2] * kin_grid[row, 2]) * (grating_n - complex(1.))
+
+        pre_factor = complex(1.) - complex(np.exp(-nhk.imag) * np.cos(nhk.real),
+                                           np.exp(-nhk.imag) * np.sin(nhk.real))
+
+        factor = complex(1.) - complex(grating_ab_ratio) * pre_factor
+
+        # Step 2: Update the coefficient
+        efield_grid[row, 0] *= factor
+        efield_grid[row, 1] *= factor
+        efield_grid[row, 2] *= factor
