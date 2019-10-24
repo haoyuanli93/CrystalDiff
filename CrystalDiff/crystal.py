@@ -6,6 +6,7 @@ fs, um are the units
 
 import numpy as np
 import scipy.special as ss
+
 from CrystalDiff import util
 
 hbar = util.hbar  # This is the reduced planck constant in keV/fs
@@ -192,3 +193,23 @@ class SinusoidalPhaseGrating:
 
         # Change the direction of the momentum transfer accordingly
         self.update_wavevector_and_coef()
+
+
+class RectangleGrating:
+    def __init__(self):
+
+        # Structure info
+        self.a = 1.  # (um)
+        self.b = 1.  # (um)
+        self.n = 0.73031 * 1e-5 + 1.j * 0.61521 * 1e-8  # This is for diamond
+        self.height = 5.  # (um). This is the height of grating tooth.
+
+        # Geometry info
+        self.direction = np.array([0., 1., 0.], dtype=np.float64)  # This is the direction of the momentum transfer
+        self.surface_point = np.array([0., 0., 3e7], dtype=np.float64)
+        self.normal = np.array([0., 0., 1.], dtype=np.float64)
+
+        # Derived parameter to calculate effects
+        self.h = self.height * self.normal
+        self.period = self.a + self.b  # (um)
+        self.base_wave_vector = self.direction * np.pi * 2. / self.period

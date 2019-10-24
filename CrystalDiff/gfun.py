@@ -835,8 +835,10 @@ def get_square_pulse_spectrum_smooth(coef,
 #  Get grating effects
 ################################################################################
 @cuda.jit('void'
-          '(complex128[:], float64[:,:],'
-          'float64[:], float64, float64, float64, complex128, float64, '
+          '(float64[:,:], complex128[:,:],'
+          'float64[:],'
+          'float64[:],'
+          'float64[:], complex128, float64, int64, float64[:],'
           'int64)')
 def get_square_grating_effect_non_zero(kout_grid, efield_grid,
                                        klen_grid,
@@ -894,8 +896,9 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
 
 
 @cuda.jit('void'
-          '(complex128[:], float64[:,:],'
-          'float64[:], float64, float64, float64, complex128, float64, '
+          '(complex128[:],'
+          'float64[:,:],'
+          'float64[:], complex128, float64,'
           'int64)')
 def get_square_grating_effect_zero(efield_grid,
                                    kin_grid,
