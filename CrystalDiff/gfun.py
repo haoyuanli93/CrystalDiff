@@ -828,3 +828,17 @@ def get_square_pulse_spectrum_smooth(coef,
 
         gaussian = math.exp(-(dk_x ** 2 + dk_y ** 2 + dk_z ** 2) * (sigma ** 2) / 2.)
         coef[row] = scaling * complex(holder * gaussian)
+
+
+################################################################################
+#  Get grating effects
+################################################################################
+@cuda.jit('void'
+          '(complex128[:], float64[:,:],'
+          'float64[:], float64, float64, float64, complex128, float64, '
+          'int64)')
+def get_square_pulse_spectrum_smooth(coef,
+                                     k_vec,
+                                     k0, a_val, b_val, c_val, scaling, sigma,
+                                     num):
+    pass
