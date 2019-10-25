@@ -197,12 +197,12 @@ class SinusoidalPhaseGrating:
 
 class RectangleGrating:
     def __init__(self):
-
         # Structure info
         self.a = 1.  # (um)
         self.b = 1.  # (um)
         self.n = 0.73031 * 1e-5 + 1.j * 0.61521 * 1e-8  # This is for diamond
         self.height = 5.  # (um). This is the height of grating tooth.
+        self.surface_point = np.array([0., 0., 3e7], dtype=np.float64)
 
         # Geometry info
         self.direction = np.array([0., 1., 0.], dtype=np.float64)  # This is the direction of the momentum transfer
@@ -210,6 +210,49 @@ class RectangleGrating:
         self.normal = np.array([0., 0., 1.], dtype=np.float64)
 
         # Derived parameter to calculate effects
+        self.ab_ratio = self.b / (self.a + self.b)
         self.h = self.height * self.normal
         self.period = self.a + self.b  # (um)
         self.base_wave_vector = self.direction * np.pi * 2. / self.period
+
+    def __update_period_wave_vector(self):
+        self.period = self.a + self.b  # (um)
+        self.base_wave_vector = self.direction * np.pi * 2. / self.period
+        self.ab_ratio = self.b / (self.a + self.b)
+
+    def __update_h(self):
+        self.h = self.height * self.normal
+
+    def set_a(self, a):
+        self.a = a
+        self.__update_period_wave_vector()
+
+    def set_b(self, b):
+        self.b = b
+        self.__update_period_wave_vector()
+
+    def set_height(self, height):
+        self.height = height
+        self.__update_h()
+
+    def set_surface_point(self, surface_point):
+        self.surface_point = surface_point
+
+    def set_normal(self, normal):
+        self.normal = normal / util.l2_norm(normal)
+        self.__update_h()
+
+    def shift(self, displacement):
+        self.surface_point += displacement
+
+    def rotate(self, rot_mat):
+        # change the position
+        self.surface_point = np.ascontiguousarray(rot_mat.dot(self.surface_point))
+
+        # The shift of the space does not change the reciprocal lattice and the normal direction
+        self.direction = np.ascontiguousarray(rot_mat.dot(self.direction))
+        self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
+
+        # Update h and wave vector
+        self.__update_h()
+        self.__update_period_wave_vector()

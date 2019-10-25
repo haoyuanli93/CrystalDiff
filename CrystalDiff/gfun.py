@@ -858,7 +858,7 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
     :param grating_n: The refraction index of the grating.
     :param grating_ab_ratio: The b / (a + b) where a is the width of the groove while b the width of the tooth
     :param order: The order of diffraction to investigate.
-    :param grating_k: The momentum transfer induced by the grating
+    :param grating_k: The base wave vector of the grating
     :param num: The number of momenta to calculate.
     :return: None
     """
@@ -886,9 +886,9 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
         efield_grid[row, 2] *= factor
 
         # Step 3: Update the momentum and the length of the momentum
-        kout_grid[row, 0] = kin_grid[row, 0] + grating_k[0]
-        kout_grid[row, 1] = kin_grid[row, 1] + grating_k[1]
-        kout_grid[row, 2] = kin_grid[row, 2] + grating_k[2]
+        kout_grid[row, 0] = kin_grid[row, 0] + order * grating_k[0]
+        kout_grid[row, 1] = kin_grid[row, 1] + order * grating_k[1]
+        kout_grid[row, 2] = kin_grid[row, 2] + order * grating_k[2]
 
         klen_grid[row] = np.sqrt(kout_grid[row, 0] * kout_grid[row, 0] +
                                  kout_grid[row, 1] * kout_grid[row, 1] +
