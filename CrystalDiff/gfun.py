@@ -837,8 +837,8 @@ def get_square_pulse_spectrum_smooth(coef,
 @cuda.jit('void'
           '(float64[:,:], complex128[:,:],'
           'float64[:],'
-          'float64[:],'
-          'float64[:], complex128, float64, int64, float64[:],'
+          'float64[:,:],'
+          'float64[:], complex128, float64, float64, float64[:],'
           'int64)')
 def get_square_grating_effect_non_zero(kout_grid, efield_grid,
                                        klen_grid,
@@ -858,6 +858,8 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
     :param grating_n: The refraction index of the grating.
     :param grating_ab_ratio: The b / (a + b) where a is the width of the groove while b the width of the tooth
     :param order: The order of diffraction to investigate.
+                    Notice that this variable has to be an integer mathematically.
+                    However, in numerical calculation, this is used as a float.
     :param grating_k: The base wave vector of the grating
     :param num: The number of momenta to calculate.
     :return: None
@@ -873,12 +875,12 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
                       grating_h[2] * kin_grid[row, 2]) * (grating_n - complex(1.))
 
         first_factor = complex(1.
-                               - np.cos(2 * np.pi * order * grating_ab_ratio),
-                               - np.sin(2 * np.pi * order * grating_ab_ratio))
-        second_factor = complex(1.) - complex(np.exp(-nhk.imag) * np.cos(nhk.real),
-                                              np.exp(-nhk.imag) * np.sin(nhk.real))
+                               - math.cos(two_pi * order * grating_ab_ratio),
+                               - math.sin(two_pi * order * grating_ab_ratio))
+        second_factor = complex(1.) - complex(math.exp(-nhk.imag) * math.cos(nhk.real),
+                                              math.exp(-nhk.imag) * math.sin(nhk.real))
 
-        factor = 1.j / np.pi * first_factor * second_factor
+        factor = 1.j / math.pi * first_factor * second_factor
 
         # Step 2: Update the coefficient
         efield_grid[row, 0] *= factor
@@ -890,13 +892,13 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
         kout_grid[row, 1] = kin_grid[row, 1] + order * grating_k[1]
         kout_grid[row, 2] = kin_grid[row, 2] + order * grating_k[2]
 
-        klen_grid[row] = np.sqrt(kout_grid[row, 0] * kout_grid[row, 0] +
-                                 kout_grid[row, 1] * kout_grid[row, 1] +
-                                 kout_grid[row, 2] * kout_grid[row, 2])
+        klen_grid[row] = math.sqrt(kout_grid[row, 0] * kout_grid[row, 0] +
+                                   kout_grid[row, 1] * kout_grid[row, 1] +
+                                   kout_grid[row, 2] * kout_grid[row, 2])
 
 
 @cuda.jit('void'
-          '(complex128[:],'
+          '(complex128[:,:],'
           'float64[:,:],'
           'float64[:], complex128, float64,'
           'int64)')
@@ -927,8 +929,8 @@ def get_square_grating_effect_zero(efield_grid,
                       grating_h[1] * kin_grid[row, 1] +
                       grating_h[2] * kin_grid[row, 2]) * (grating_n - complex(1.))
 
-        pre_factor = complex(1.) - complex(np.exp(-nhk.imag) * np.cos(nhk.real),
-                                           np.exp(-nhk.imag) * np.sin(nhk.real))
+        pre_factor = complex(1.) - complex(math.exp(-nhk.imag) * math.cos(nhk.real),
+                                           math.exp(-nhk.imag) * math.sin(nhk.real))
 
         factor = complex(1.) - complex(grating_ab_ratio) * pre_factor
 

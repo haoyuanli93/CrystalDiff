@@ -1,6 +1,8 @@
 import numpy as np
-from CrystalDiff import util
+from scipy.spatial.transform import Rotation
+
 from CrystalDiff import crystal
+from CrystalDiff import util
 
 """
 This module contains the most high-level functions. None of the
@@ -189,14 +191,19 @@ def get_split_delay_output_frame_refined(kin, kout, aux, displacement,
     return pulse, crystal_list_1, crystal_list_2, grating_pair, observation, rot_mat_dict
 
 
-def get_delay_line_angles(angle_offset, theta, rho, inclined_angle=0., asymmetric_angle=0.):
+def get_delay_line_angles(angle_offset, theta, rho,
+                          inclined_angle=0.,
+                          asymmetric_angle=0.):
     """
+    I need to include deviation parameters with respect to the ideal position.
 
-    :param angle_offset:
-    :param theta:
-    :param rho:
-    :param inclined_angle:
-    :param asymmetric_angle:
+    :param angle_offset: The is the angle adjusted from the grating diffraction
+    :param theta: The geometric bragg angle.
+    :param rho: The angle associated with the normal direction
+    :param inclined_angle: The angle associated for the inclination. This change the normal direction of
+                            the reflection surface angle
+    :param asymmetric_angle: The angle associated with the asymmetric reflection. This changes the
+                                normal direction of the reflection surface angle.
     :return:
     """
     theta_vals = np.array([theta,
@@ -271,8 +278,7 @@ def get_light_path_branch(pulse_obj, grating_list, path_list, crystal_list, bran
     kin = np.reshape(pulse_obj.k0, (1, 3))
 
     # Get kout from the first grating
-    grating_list[0].set_order(branch)
-    kout_tmp_1 = util.get_grating_output_momentum(grating_wavenum=grating_list[0].wave_vector,
+    kout_tmp_1 = util.get_grating_output_momentum(grating_wavenum=branch * grating_list[0].base_wave_vector,
                                                   k_vec=kin)
     # Get the intersection point with the first crystal
     intersect_1 = path_list[0] * kout_tmp_1[0] / util.l2_norm(kout_tmp_1[0])
@@ -288,8 +294,7 @@ def get_light_path_branch(pulse_obj, grating_list, path_list, crystal_list, bran
     intersect_2 = intersection_points[-1] + path_list[-2] * kout_vec_list[-1] / util.l2_norm(kout_vec_list[-1])
 
     # Get the final output momentum
-    grating_list[1].set_order(-branch)
-    kout_tmp_2 = util.get_grating_output_momentum(grating_wavenum=grating_list[1].wave_vector,
+    kout_tmp_2 = util.get_grating_output_momentum(grating_wavenum=-branch * grating_list[1].base_wave_vector,
                                                   k_vec=kout_vec_list[-1])
     intersect_final = intersect_2 + path_list[-1] * kout_tmp_2[0] / util.l2_norm(kout_tmp_2[0])
 
@@ -310,6 +315,107 @@ def get_light_path_branch(pulse_obj, grating_list, path_list, crystal_list, bran
 # --------------------------------------------------------------
 #              Setup crystals
 # --------------------------------------------------------------
+def get_crystal_list_delay_branch(hlen_vals,
+                                  theta_vals, rho_vals, tau_vals,
+                                  surface_points,
+                                  chi0, chih_sigma, chih_pi, chihbar_sigma, chihbar_pi,
+                                  misalign_1=None, misalign_2=None):
+    """
+    This function is designed for the new split-delay specifically.
+
+    :param hlen_vals:
+    :param theta_vals:
+    :param rho_vals:
+    :param tau_vals:
+    :param surface_points:
+    :param chi0:
+    :param chih_sigma:
+    :param chih_pi:
+    :param chihbar_sigma:
+    :param chihbar_pi:
+    :param misalign_1: The misalignment of the first channel-cut crystal.
+                        This is a (2,) numpy array with a detype of float64
+
+                        The first value is the rotation along the x axis.
+
+                        The second value is the rotation within the diffraction plane.
+                        This is the y axis fixed on the crystal
+
+                        The  value is the rotation along the along axis of the crystal.
+                        This is the z axis fixed on the crystal
+
+                        One first apply the x axis rotation. Then apply the y axis rotation.
+                        In the end the z axis rotation
+
+    :param misalign_2: The misalignment of the second channel-cut crystal.
+    :return:
+    """
+    # First get the list
+    crystal_list = [crystal.CrystalBlock3D() for _ in range(4)]
+
+    # ----------------------------------------------
+    # Set h vectors, surface normal and surface position
+    # For simplicity, we always assumes that the h vector is in the x-y plane of the device frame
+    # ----------------------------------------------
+
+    # Process the first channel-cut crystal
+    for idx in range(2):
+
+        # Get the rotation matrix from the misalignment
+        my_crystal = crystal_list[idx]
+
+        my_crystal.set_thickness(1e6)
+        my_crystal.set_h(np.array([0.,
+                                   hlen_vals[idx] * np.sin(theta_vals[idx]),
+                                   hlen_vals[idx] * np.cos(theta_vals[idx])]))
+        normal = np.array([np.sin(tau_vals[idx]),
+                           np.cos(tau_vals[idx]) * np.sin(rho_vals[idx]),
+                           np.cos(tau_vals[idx]) * np.cos(rho_vals[idx])])
+        my_crystal.set_surface_normal(normal)
+        my_crystal.set_surface_position(surface_points[idx])
+
+        # ----------------------------------------------
+        # Set chi values
+        # ----------------------------------------------
+        my_crystal.set_chi0(chi0)
+        my_crystal.set_chih_sigma(chih_sigma)
+        my_crystal.set_chihbar_sigma(chihbar_sigma)
+        my_crystal.set_chih_pi(chih_pi)
+        my_crystal.set_chihbar_pi(chihbar_pi)
+
+        # ----------------------------------------------
+        # Apply the misalignment effect
+        # ----------------------------------------------
+        if misalign_1:
+            # Rotation matrix for the channel-cut crystal
+            cc_rot_1 = Rotation.from_euler('xyz', misalign_1, degrees=False)
+            my_crystal.rotate_around_surface_point(rot_mat=cc_rot_1.as_dcm())
+
+    # Process the second channel-cut crystal
+    for idx in range(2, 4):
+        my_crystal = crystal_list[idx]
+
+        my_crystal.set_thickness(1e6)
+        my_crystal.set_h(np.array([0.,
+                                   hlen_vals[idx] * np.sin(theta_vals[idx]),
+                                   hlen_vals[idx] * np.cos(theta_vals[idx])]))
+        normal = np.array([np.sin(tau_vals[idx]),
+                           np.cos(tau_vals[idx]) * np.sin(rho_vals[idx]),
+                           np.cos(tau_vals[idx]) * np.cos(rho_vals[idx])])
+        my_crystal.set_surface_normal(normal)
+        my_crystal.set_surface_position(surface_points[idx])
+
+        # ----------------------------------------------
+        # Set chi values
+        # ----------------------------------------------
+        my_crystal.set_chi0(chi0)
+        my_crystal.set_chih_sigma(chih_sigma)
+        my_crystal.set_chihbar_sigma(chihbar_sigma)
+        my_crystal.set_chih_pi(chih_pi)
+        my_crystal.set_chihbar_pi(chihbar_pi)
+    return crystal_list
+
+
 def get_crystal_list(num, hlen_vals, theta_vals, rho_vals, tau_vals, surface_points,
                      chi0, chih_sigma, chih_pi, chihbar_sigma, chihbar_pi):
     """

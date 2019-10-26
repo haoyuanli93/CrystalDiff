@@ -121,6 +121,11 @@ class CrystalBlock3D:
         self.h = np.ascontiguousarray(rot_mat.dot(self.h))
         self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
 
+    def rotate_around_surface_point(self, rot_mat):
+        # The shift of the space does not change the reciprocal lattice and the normal direction
+        self.h = np.ascontiguousarray(rot_mat.dot(self.h))
+        self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
+
 
 class SinusoidalPhaseGrating:
     def __init__(self):
