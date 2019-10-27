@@ -130,6 +130,23 @@ def scalar_vector_multiply_complex(scalar_grid, vec, vec_grid, num):
         vec_grid[idx, 2] = scalar_grid[idx] * vec[2]
 
 
+@cuda.jit("void(complex128[:], complex128[:,:], complex128[:,:], int64)")
+def scalar_vector_elementwise_multiply_complex(scalar_grid, vec, vec_grid, num):
+    """
+
+    :param scalar_grid:
+    :param vec:
+    :param vec_grid:
+    :param num:
+    :return:
+    """
+    idx = cuda.grid(1)
+    if idx < num:
+        vec_grid[idx, 0] = scalar_grid[idx] * vec[idx, 0]
+        vec_grid[idx, 1] = scalar_grid[idx] * vec[idx, 1]
+        vec_grid[idx, 2] = scalar_grid[idx] * vec[idx, 2]
+
+
 @cuda.jit("void(complex128[:,:], complex128[:], complex128[:], complex128[:], int64)")
 def vector_expansion(vector, x, y, z, num):
     """
@@ -612,6 +629,29 @@ def get_source_point(source_point, end_point, kvec_grid, klen_grid, path_length,
         source_point[idx, 2] = end_point[idx, 2] - coef * kvec_grid[idx, 2]
 
 
+@cuda.jit("void(float64[:,:], float64[:,:], float64[:,:], float64[:], float64[:], int64)")
+def get_final_point(final_point, end_point, kvec_grid, klen_grid, path_length, num):
+    """
+    Find the source point of this wave vector component at time 0.
+
+    :param final_point:
+    :param end_point:
+    :param kvec_grid:
+    :param klen_grid
+    :param path_length:
+    :param num:
+    :return:
+    """
+    idx = cuda.grid(1)
+    if idx < num:
+        # Normalize with the length of the wave number
+        coef = path_length[idx] / klen_grid[idx]
+
+        final_point[idx, 0] = end_point[idx, 0] + coef * kvec_grid[idx, 0]
+        final_point[idx, 1] = end_point[idx, 1] + coef * kvec_grid[idx, 1]
+        final_point[idx, 2] = end_point[idx, 2] + coef * kvec_grid[idx, 2]
+
+
 @cuda.jit("void(complex128[:], float64[:,:], float64[:], float64[:,:], int64)")
 def get_spatial_phase(phase, source_point, reference_point, k_vec, num):
     """
@@ -658,9 +698,9 @@ def get_relative_spatial_phase(phase, source_point, reference_point, k_vec, k_re
     """
     idx = cuda.grid(1)
     if idx < num:
-        tmp = ((k_vec[idx, 0] - k_ref[0]) * (source_point[idx, 0] - reference_point[0]) +
-               (k_vec[idx, 1] - k_ref[1]) * (source_point[idx, 1] - reference_point[1]) +
-               (k_vec[idx, 2] - k_ref[2]) * (source_point[idx, 2] - reference_point[2]))
+        tmp = ((k_vec[idx, 0] - k_ref[0]) * (-source_point[idx, 0] + reference_point[0]) +
+               (k_vec[idx, 1] - k_ref[1]) * (-source_point[idx, 1] + reference_point[1]) +
+               (k_vec[idx, 2] - k_ref[2]) * (-source_point[idx, 2] + reference_point[2]))
 
         phase[idx] = complex(math.cos(tmp), math.sin(tmp))
 

@@ -7,9 +7,7 @@ from pyculib import fft as cufft
 from CrystalDiff import gfun
 
 
-def get_single_branch_split_delay_field(grating_pair, channel_cuts,
-                                        total_path, observation,
-                                        my_pulse, pulse_delay_time, pulse_k0_final,
+def get_single_branch_split_delay_field(grating_pair, channel_cuts, total_path, observation, my_pulse, delay_time,
                                         grating_orders,
                                         kx_grid, ky_grid, kz_grid,
                                         number_x, number_y, number_z,
@@ -21,8 +19,7 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
     :param total_path:
     :param observation:
     :param my_pulse:
-    :param pulse_delay_time:
-    :param pulse_k0_final: The output wave vector of the central wave length of the incident pulse.
+    :param delay_time:
     :param grating_orders:
     :param kx_grid:
     :param ky_grid:
@@ -68,13 +65,13 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
     #  [1D slices] Various intersection points, path length and phase
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     intersect_points = np.ascontiguousarray(np.zeros((number_z, 3), dtype=np.float64))
-    component_final_points = np.ascontiguousarray(np.zeros((number_z, 3), dtype=np.float64))
+    source_points = np.ascontiguousarray(np.zeros((number_z, 3), dtype=np.float64))
     remaining_length = np.ascontiguousarray(np.zeros(number_z, dtype=np.float64))
     phase_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
     jacob_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.float64))
 
     cuda_intersect = cuda.to_device(intersect_points)
-    cuda_final_points = cuda.to_device(component_final_points)
+    cuda_source_points = cuda.to_device(source_points)
     cuda_remain_path = cuda.to_device(remaining_length)
     cuda_phase = cuda.to_device(phase_grid)
     cuda_jacob = cuda.to_device(jacob_grid)
@@ -161,13 +158,24 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
 
             gfun.init_jacobian[b_num, d_num](cuda_jacob, number_z)
             gfun.init_scalar_grid[b_num, d_num](cuda_remain_path, total_path, number_z)
-            gfun.init_vector_grid[b_num, d_num](cuda_intersect, my_pulse.x0, 3, number_z)
+            gfun.init_vector_grid[b_num, d_num](cuda_intersect, observation, 3, number_z)
 
             # --------------------------------------------------------------------
-            #  Step 2. Back propagate from the last grating.
-            #          Notice that here, the momentum mesh is not deformed.
+            #  Step 2. Back propagate from the last grating
             # --------------------------------------------------------------------
-            # Here, no deformation of the momentum lattice.
+            # Get the intersection point from the final point
+            gfun.get_intersection_point[b_num, d_num](cuda_remain_path,
+                                                      cuda_intersect,
+                                                      cuda_kin_grid,
+                                                      cuda_klen_grid,
+                                                      cuda_remain_path,
+                                                      cuda_intersect,
+                                                      grating_pair[1].surface_point,
+                                                      grating_pair[1].normal,
+                                                      number_z)
+
+            # Notice that here, the change of the wave vector is obvious. There is no need
+            # to use the complete grating function
             gfun.add_vector[b_num, d_num](cuda_kin_grid,
                                           cuda_kin_grid,
                                           - grating_orders[1] * grating_pair[1].base_wave_vector,
@@ -183,6 +191,17 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
             #  Step 3. Get k_in mesh and the jacobian
             # --------------------------------------------------------------------
             for crystal_idx in [3, 2, 1, 0]:
+                # Get the intersection point from the final point
+                gfun.get_intersection_point[b_num, d_num](cuda_remain_path,
+                                                          cuda_intersect,
+                                                          cuda_kin_grid,
+                                                          cuda_klen_grid,
+                                                          cuda_remain_path,
+                                                          cuda_intersect,
+                                                          channel_cuts[crystal_idx].surface_point,
+                                                          channel_cuts[crystal_idx].normal,
+                                                          number_z)
+
                 # Calculate the incident wave vector
                 gfun.get_kin_and_jacobian[b_num, d_num](cuda_kin_grid,
                                                         cuda_jacob,
@@ -197,6 +216,17 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
             # --------------------------------------------------------------------
             #  Step 4. Back propagate from the First grating
             # --------------------------------------------------------------------
+            # Get the intersection point from the final point
+            gfun.get_intersection_point[b_num, d_num](cuda_remain_path,
+                                                      cuda_intersect,
+                                                      cuda_kin_grid,
+                                                      cuda_klen_grid,
+                                                      cuda_remain_path,
+                                                      cuda_intersect,
+                                                      grating_pair[0].surface_point,
+                                                      grating_pair[0].normal,
+                                                      number_z)
+
             gfun.add_vector[b_num, d_num](cuda_kin_grid,
                                           cuda_kin_grid,
                                           - grating_orders[0] * grating_pair[0].base_wave_vector,
@@ -208,12 +238,12 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
                                                  3,
                                                  number_z)
             # --------------------------------------------------------------------
-            #  Step 5. Get the coefficient of each monochromatic component
+            #  Step 5. Get the Fourier coefficients
             # --------------------------------------------------------------------
             # Calculate the corresponding coefficient in the incident pulse
             gfun.get_gaussian_pulse_spectrum[b_num, d_num](cuda_coef,
                                                            cuda_kin_grid,
-                                                           float(pulse_delay_time),
+                                                           float(delay_time),
                                                            my_pulse.sigma_mat,
                                                            my_pulse.scaling,
                                                            np.zeros(3, dtype=np.float64),
@@ -223,10 +253,32 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
                                                            number_z)
 
             # --------------------------------------------------------------------
-            #  Step 6. Calculate the Jacobian weighted vector spectrum
+            #  Step 6. Find the initial source position and phase
             # --------------------------------------------------------------------
-            # Add Jacobian
+            gfun.get_source_point[b_num, d_num](cuda_source_points,
+                                                cuda_intersect,
+                                                cuda_kin_grid,
+                                                cuda_klen_grid,
+                                                cuda_remain_path,
+                                                number_z)
+
+            # Get the propagational phase from the inital phase.
+            gfun.get_relative_spatial_phase[b_num, d_num](cuda_phase,
+                                                          cuda_source_points,
+                                                          my_pulse.x0,
+                                                          cuda_kin_grid,
+                                                          my_pulse.k0,
+                                                          number_z)
+
+            # Add the phase
             gfun.scalar_scalar_multiply_complex[b_num, d_num](cuda_coef,
+                                                              cuda_phase,
+                                                              cuda_spec_scalar,
+                                                              number_z
+                                                              )
+
+            # Add Jacobian
+            gfun.scalar_scalar_multiply_complex[b_num, d_num](cuda_spec_scalar,
                                                               cuda_jacob,
                                                               cuda_spec_scalar,
                                                               number_z
@@ -241,17 +293,6 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
             # --------------------------------------------------------------------
             #  Step 7. Forward propagation
             # --------------------------------------------------------------------
-            # Get the intersection point on the first grating from the initial point
-            gfun.get_intersection_point[b_num, d_num](cuda_remain_path,
-                                                      cuda_intersect,
-                                                      cuda_kin_grid,
-                                                      cuda_klen_grid,
-                                                      cuda_remain_path,
-                                                      cuda_intersect,
-                                                      grating_pair[0].surface_point,
-                                                      grating_pair[0].normal,
-                                                      number_z)
-
             # Diffracted by the first grating
             gfun.get_square_grating_effect_non_zero[b_num, d_num](cuda_kin_grid,
                                                                   cuda_spec_vec,
@@ -266,18 +307,6 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
 
             # Diffracted by the delay lines
             for crystal_idx in range(4):
-                # Get the intersection point from the previous intersection point
-                gfun.get_intersection_point[b_num, d_num](cuda_remain_path,
-                                                          cuda_intersect,
-                                                          cuda_kin_grid,
-                                                          cuda_klen_grid,
-                                                          cuda_remain_path,
-                                                          cuda_intersect,
-                                                          channel_cuts[crystal_idx].surface_point,
-                                                          channel_cuts[crystal_idx].normal,
-                                                          number_z)
-
-                # Get the reflectivity
                 gfun.get_bragg_reflection[b_num, d_num](cuda_reflect_sigma,
                                                         cuda_reflect_pi,
                                                         cuda_kin_grid,
@@ -304,18 +333,6 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
                                                                   cuda_reflect_total_pi,
                                                                   cuda_reflect_total_pi,
                                                                   number_z)
-
-            # Get the intersection point on the second grating from the previous intersection point
-            gfun.get_intersection_point[b_num, d_num](cuda_remain_path,
-                                                      cuda_intersect,
-                                                      cuda_kin_grid,
-                                                      cuda_klen_grid,
-                                                      cuda_remain_path,
-                                                      cuda_intersect,
-                                                      grating_pair[1].surface_point,
-                                                      grating_pair[1].normal,
-                                                      number_z)
-
             # Diffracted by the second grating
             gfun.get_square_grating_effect_non_zero[b_num, d_num](cuda_kin_grid,
                                                                   cuda_spec_vec,
@@ -327,32 +344,9 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
                                                                   grating_orders[1],
                                                                   grating_pair[1].base_wave_vector,
                                                                   number_z)
-            # --------------------------------------------------------------------
-            #  Step 8. Get the propagation phase
-            # --------------------------------------------------------------------
-            gfun.get_final_point[b_num, d_num](cuda_final_points,
-                                               cuda_intersect,
-                                               cuda_kin_grid,
-                                               cuda_klen_grid,
-                                               cuda_remain_path,
-                                               number_z)
-
-            # Get the propagational phase from the inital phase.
-            gfun.get_relative_spatial_phase[b_num, d_num](cuda_phase,
-                                                          cuda_final_points,
-                                                          observation,
-                                                          cuda_kin_grid,
-                                                          pulse_k0_final,
-                                                          number_z)
-
-            # Add the phase
-            gfun.scalar_vector_elementwise_multiply_complex[b_num, d_num](cuda_phase,
-                                                                          cuda_spec_vec,
-                                                                          cuda_spec_vec,
-                                                                          number_z)
 
             # --------------------------------------------------------------------
-            #  Step 9. Goes from the reciprocal space to the real space
+            #  Step 8. Goes from the reciprocal space to the real space
             # --------------------------------------------------------------------
             # Save the result to the total reflect
             gfun.vector_expansion[b_num, d_num](cuda_spec_vec,
@@ -441,7 +435,7 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
         cuda_z_spec_2d = cuda.to_device(z_spec_2d)
 
     # Move the arrays back to the device for debugging.
-    cuda_final_points.to_host()
+    cuda_source_points.to_host()
     cuda_remain_path.to_host()
     cuda_spec_scalar.to_host()
     cuda_intersect.to_host()
@@ -468,7 +462,7 @@ def get_single_branch_split_delay_field(grating_pair, channel_cuts,
     # Create result dictionary
 
     check_dict = {"intersect_points": intersect_points,
-                  "component_final_points": component_final_points,
+                  "source_points": source_points,
                   "remaining_length": remaining_length,
                   "phase_grid": phase_grid,
                   "jacob_grid": jacob_grid,
