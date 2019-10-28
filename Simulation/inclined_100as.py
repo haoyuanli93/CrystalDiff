@@ -9,7 +9,7 @@ sys.path.append(r"/home/haoyuan/my_repos/CrystalDiff")
 from CrystalDiff import util, pulse, lclsutil, crystal, groutine
 
 # Create the h5 file to save the result
-file_name = "inclined_1fs_{}.h5".format(util.time_stamp())
+file_name = "inclined_100as_{}.h5".format(util.time_stamp())
 with h5.File(file_name, 'w'):
     pass
 
@@ -32,7 +32,7 @@ my_pulse.set_pulse_properties(central_energy=energy_center,
                               polar=[0., 1., 0.],
                               sigma_x=708.2581446128465,
                               sigma_y=708.2581446128465,
-                              sigma_z=1.,
+                              sigma_z=0.1,
                               x0=np.array([0., 0., -pre_length]))
 
 # ----------------------------------------------------------------------------------------------------------
@@ -212,8 +212,8 @@ number_z = 10 ** 5
 kx_grid, ky_grid, kz_grid, axis_info = lclsutil.get_k_mesh_3d(number_x=number_x,
                                                               number_y=number_y,
                                                               number_z=number_z,
-                                                              delta_e_x=1.5e-4,
-                                                              delta_e_y=1.5e-4,
+                                                              delta_e_x=1e-4,
+                                                              delta_e_y=1e-4,
                                                               delta_e_z=7e-4 / util.c)
 kz_grid += my_pulse.klen0
 

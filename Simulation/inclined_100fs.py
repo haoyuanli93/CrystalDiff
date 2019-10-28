@@ -127,7 +127,7 @@ path_list_1 = [5e6 - 10e4, 1e5, 5e5,
                1.05e5, 6e6, 1e6]
 path_list_2 = [5e6, 1e5, 1e5,
                1.05e5, 6e6, 1e6]
-delay_time = 700.
+delay_time = 800.
 
 ############################################################################################################
 ############################################################################################################
@@ -214,7 +214,7 @@ kx_grid, ky_grid, kz_grid, axis_info = lclsutil.get_k_mesh_3d(number_x=number_x,
                                                               number_z=number_z,
                                                               delta_e_x=1e-4,
                                                               delta_e_y=1e-4,
-                                                              delta_e_z=2e-4 / util.c)
+                                                              delta_e_z=1e-4 / util.c)
 kz_grid += my_pulse.klen0
 
 
@@ -230,8 +230,8 @@ kz_grid = np.ascontiguousarray(np.fft.fftshift(kz_grid))
 ############################################################################################################
 
 # Set the range of the index to save
-z_idx_range = 500
-num1 = 400
+z_idx_range = 600
+num1 = 500
 num2 = 100
 d_num = 512
 
