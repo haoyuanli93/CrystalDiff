@@ -205,8 +205,8 @@ class RectangleGrating:
         # Structure info
         self.a = 1.  # (um)
         self.b = 1.  # (um)
-        self.n = 0.73031 * 1e-5 + 1.j * 0.61521 * 1e-8  # This is for diamond
-        self.height = 5.  # (um). This is the height of grating tooth.
+        self.n = 1. - 0.73031 * 1e-5 + 1.j * 0.61521 * 1e-8  # This is for diamond
+        self.height = 8.488457671486596  # (um). This is the height of grating tooth.
         self.surface_point = np.array([0., 0., 3e7], dtype=np.float64)
 
         # Geometry info
