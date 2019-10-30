@@ -144,7 +144,7 @@ delay_time = 20.
                                                        fix_branch_crystal=crystal_list_2,
                                                        var_branch_crystal=crystal_list_1,
                                                        grating_pair=grating_list,
-                                                       pulse_obj=my_pulse)
+                                                       kin=my_pulse)
 
 (intersect_brunch_1,
  kout_brunch_1,

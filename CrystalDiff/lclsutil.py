@@ -11,7 +11,7 @@ other modules can depend on this module.
 
 
 def get_split_delay_configuration(delay_time, fix_branch_path, var_branch_path,
-                                  fix_branch_crystal, var_branch_crystal, grating_pair, pulse_obj):
+                                  fix_branch_crystal, var_branch_crystal, grating_pair, kin):
     """
     This function automatically change the configurations of the variable branch to
     match the delay time.
@@ -22,7 +22,7 @@ def get_split_delay_configuration(delay_time, fix_branch_path, var_branch_path,
     :param fix_branch_crystal:
     :param var_branch_crystal:
     :param grating_pair:
-    :param pulse_obj:
+    :param kin:
     :return:
     """
     # ---------------------------------------------------------
@@ -31,7 +31,7 @@ def get_split_delay_configuration(delay_time, fix_branch_path, var_branch_path,
 
     # First check the lenght of the path since it might different
     (intersect_fixed,
-     kout_fixed) = get_light_path_branch(pulse_obj=pulse_obj,
+     kout_fixed) = get_light_path_branch(kin=kin,
                                          grating_list=grating_pair,
                                          path_list=fix_branch_path,
                                          crystal_list=fix_branch_crystal,
@@ -62,7 +62,7 @@ def get_split_delay_configuration(delay_time, fix_branch_path, var_branch_path,
     # ----------------------------------------------------------
     # Find the momentum information
     (intersect_var,
-     kout_var) = get_light_path_branch(pulse_obj=pulse_obj,
+     kout_var) = get_light_path_branch(kin=kin,
                                        grating_list=grating_pair,
                                        path_list=var_branch_path,
                                        crystal_list=var_branch_crystal,
@@ -113,6 +113,48 @@ def get_split_delay_output_frame(displacement, obvservation, pulse, crystal_list
         grating.shift(displacement=displacement)
 
     return pulse, crystal_list_1, crystal_list_2, grating_pair, obvservation
+
+
+def get_split_delay_fix_shear_output_frame(displacement, observe, pulse,
+                                           crystal_fix_shear,
+                                           crystal_list_1, crystal_list_2, grating_pair):
+    """
+    Go to the output grating position.
+
+    :param displacement:
+    :param observe:
+    :param pulse:
+    :param crystal_fix_shear:
+    :param crystal_list_1:
+    :param crystal_list_2:
+    :param grating_pair:
+    :return:
+    """
+    # ------------------------------
+    # Shift the position
+    # ------------------------------
+    pulse.x0 += displacement
+
+    # Shift the crystal
+    for my_crystal in crystal_fix_shear:
+        my_crystal.shift(displacement=displacement)
+
+    # Shift the crystal
+    for my_crystal in crystal_list_1:
+        my_crystal.shift(displacement=displacement)
+
+    # Shift the crystal
+    for my_crystal in crystal_list_2:
+        my_crystal.shift(displacement=displacement)
+
+    # Shift the observation position
+    observe += displacement
+
+    # Shift the grating
+    for grating in grating_pair:
+        grating.shift(displacement=displacement)
+
+    return pulse, crystal_fix_shear, crystal_list_1, crystal_list_2, grating_pair, observe
 
 
 def get_split_delay_output_frame_refined(kin, kout, aux, displacement,
@@ -224,7 +266,7 @@ def get_delay_line_angles(angle_offset, theta, rho,
 # --------------------------------------------------------------
 #           Calculate the light path
 # --------------------------------------------------------------
-def get_light_path(pulse_obj, grating_list, crystal_list_1, path_list_1, crystal_list_2, path_list_2):
+def get_light_path(kin, grating_list, crystal_list_1, path_list_1, crystal_list_2, path_list_2):
     """
     In this function, the first branch is the upper branch in the following diagram.
     The second branch is the lower branch in the following diagram.
@@ -239,7 +281,7 @@ def get_light_path(pulse_obj, grating_list, crystal_list_1, path_list_1, crystal
                 |           -       -         |
                 |               -             |
 
-    :param pulse_obj:
+    :param kin:
     :param grating_list:
     :param crystal_list_1:
     :param path_list_1:
@@ -248,14 +290,14 @@ def get_light_path(pulse_obj, grating_list, crystal_list_1, path_list_1, crystal
     :return:
     """
     (intersect_branch_1,
-     kout_branch_1) = get_light_path_branch(pulse_obj=pulse_obj,
+     kout_branch_1) = get_light_path_branch(kin=kin,
                                             grating_list=grating_list,
                                             path_list=path_list_1,
                                             crystal_list=crystal_list_1,
                                             branch=1)
 
     (intersect_branch_2,
-     kout_branch_2) = get_light_path_branch(pulse_obj=pulse_obj,
+     kout_branch_2) = get_light_path_branch(kin=kin,
                                             grating_list=grating_list,
                                             path_list=path_list_2,
                                             crystal_list=crystal_list_2,
@@ -264,18 +306,18 @@ def get_light_path(pulse_obj, grating_list, crystal_list_1, path_list_1, crystal
     return intersect_branch_1, kout_branch_1, intersect_branch_2, kout_branch_2
 
 
-def get_light_path_branch(pulse_obj, grating_list, path_list, crystal_list, branch=1):
+def get_light_path_branch(kin, grating_list, path_list, crystal_list, branch=1):
     """
     Get the light path for one of the branch.
 
-    :param pulse_obj:
+    :param kin: The incident wave vector with a shape of (1,3)
     :param grating_list:
     :param path_list:
     :param crystal_list:
     :param branch:
     :return:
     """
-    kin = np.reshape(pulse_obj.k0, (1, 3))
+    kin = np.reshape(kin, (1, 3))
 
     # Get kout from the first grating
     kout_tmp_1 = util.get_grating_output_momentum(grating_wavenum=branch * grating_list[0].base_wave_vector,
@@ -304,7 +346,7 @@ def get_light_path_branch(pulse_obj, grating_list, path_list, crystal_list, bran
                                   intersection_points[1:],  # The first point is redundant.
                                   intersect_2,
                                   intersect_final))
-    kout_branch = np.vstack((pulse_obj.k0,
+    kout_branch = np.vstack((kin,
                              kout_tmp_1,
                              kout_vec_list,
                              kout_tmp_2))
