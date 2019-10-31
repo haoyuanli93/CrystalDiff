@@ -9,7 +9,7 @@ sys.path.append(r"/home/haoyuan/my_repos/CrystalDiff")
 from CrystalDiff import util, pulse, lclsutil, crystal, groutine
 
 # Create the h5 file to save the result
-file_name = "inclined_1fs_{}.h5".format(util.time_stamp())
+file_name = "inclined_10fs_{}.h5".format(util.time_stamp())
 with h5.File(file_name, 'w'):
     pass
 

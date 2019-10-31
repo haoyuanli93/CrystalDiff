@@ -9,7 +9,7 @@ sys.path.append(r"/home/haoyuan/my_repos/CrystalDiff")
 from CrystalDiff import util, pulse, lclsutil, crystal, groutine
 
 # Create the h5 file to save the result
-file_name = "inclined_1fs_{}.h5".format(util.time_stamp())
+file_name = "inclined_100fs_{}.h5".format(util.time_stamp())
 with h5.File(file_name, 'w'):
     pass
 
@@ -227,8 +227,8 @@ kz_grid = np.ascontiguousarray(np.fft.fftshift(kz_grid))
 
 # Set the range of the index to save
 z_idx_range = 300
-num1 = 270
-num2 = 30
+num1 = 250
+num2 = 50
 d_num = 512
 
 # -------------------------------------------------------------

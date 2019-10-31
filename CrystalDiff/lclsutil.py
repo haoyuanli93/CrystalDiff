@@ -157,6 +157,31 @@ def get_split_delay_fix_shear_output_frame(displacement, observe, pulse,
     return pulse, crystal_fix_shear, crystal_list_1, crystal_list_2, grating_pair, observe
 
 
+def get_delay_line_output_frame(displacement, observe, pulse, crystal_list):
+    """
+    Go to the output grating position.
+
+    :param displacement:
+    :param observe:
+    :param pulse:
+    :param crystal_list:
+    :return:
+    """
+    # ------------------------------
+    # Shift the position
+    # ------------------------------
+    pulse.x0 += displacement
+
+    # Shift the crystal
+    for my_crystal in crystal_list:
+        my_crystal.shift(displacement=displacement)
+
+    # Shift the observation position
+    observe += displacement
+
+    return pulse, crystal_list, observe
+
+
 def get_split_delay_output_frame_refined(kin, kout, aux, displacement,
                                          observation, pulse,
                                          crystal_list_1, crystal_list_2, grating_pair,
