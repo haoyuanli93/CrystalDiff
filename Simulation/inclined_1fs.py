@@ -18,7 +18,6 @@ with h5.File(file_name, 'w'):
 #                                    Prepare the variables
 ############################################################################################################
 ############################################################################################################
-
 # ----------------------------------------------------------------------------------------------------------
 #                       Step 1: Pulse
 # ----------------------------------------------------------------------------------------------------------
@@ -134,8 +133,6 @@ delay_time = 20.
 #                               Tune the position of the crystals
 ############################################################################################################
 ############################################################################################################
-
-
 # Adjust the path sections
 (path_list_1,
  path_list_2) = lclsutil.get_split_delay_configuration(delay_time=delay_time,
@@ -144,12 +141,12 @@ delay_time = 20.
                                                        fix_branch_crystal=crystal_list_2,
                                                        var_branch_crystal=crystal_list_1,
                                                        grating_pair=grating_list,
-                                                       kin=my_pulse)
+                                                       kin=my_pulse.k0)
 
 (intersect_brunch_1,
  kout_brunch_1,
  intersect_brunch_2,
- kout_brunch_2) = lclsutil.get_light_path(pulse_obj=my_pulse,
+ kout_brunch_2) = lclsutil.get_light_path(kin=my_pulse.k0,
                                           grating_list=grating_list,
                                           crystal_list_1=crystal_list_1,
                                           path_list_1=path_list_1,
@@ -206,17 +203,16 @@ print("The total propagation length is {:.2f}m.".format(total_path / 1e6))
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                  Get the momentum mesh
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-number_x = 500
-number_y = 500
+number_x = 250
+number_y = 250
 number_z = 10 ** 5
 kx_grid, ky_grid, kz_grid, axis_info = lclsutil.get_k_mesh_3d(number_x=number_x,
                                                               number_y=number_y,
                                                               number_z=number_z,
-                                                              delta_e_x=1.5e-4,
-                                                              delta_e_y=1.5e-4,
-                                                              delta_e_z=7e-4 / util.c)
+                                                              delta_e_x=7.5e-5,
+                                                              delta_e_y=7.5e-5,
+                                                              delta_e_z=1e-3 / util.c)
 kz_grid += my_pulse.klen0
-
 
 # Apply fft shift
 kx_grid = np.ascontiguousarray(np.fft.fftshift(kx_grid))
@@ -230,9 +226,9 @@ kz_grid = np.ascontiguousarray(np.fft.fftshift(kz_grid))
 ############################################################################################################
 
 # Set the range of the index to save
-z_idx_range = 600
-num1 = 550
-num2 = 50
+z_idx_range = 300
+num1 = 270
+num2 = 30
 d_num = 512
 
 # -------------------------------------------------------------
@@ -242,7 +238,7 @@ tic = time.time()
 
 (result_3d_dict,
  result_2d_dict,
- check_dict) = groutine.get_single_branch_split_delay_field(grating_pair=grating_list,
+ check_dict) = groutine.get_split_delay_single_branch_field(grating_pair=grating_list,
                                                             channel_cuts=crystal_list_1,
                                                             total_path=total_path,
                                                             observation=observation,
@@ -259,7 +255,7 @@ tic = time.time()
                                                             z_idx_range=z_idx_range,
                                                             num1=num1,
                                                             num2=num2,
-                                                            d_num=d_num)
+                                                            d_num=512)
 
 toc = time.time()
 print("It takes {:.2f} seconds to get the field for branch 1.".format(toc - tic))
@@ -272,7 +268,6 @@ util.save_branch_result_to_h5file(file_name=file_name,
                                   result_2d_dict=result_2d_dict,
                                   check_dict=check_dict)
 
-
 # -------------------------------------------------------------
 #            Get Field for Branch 2
 # -------------------------------------------------------------
@@ -281,7 +276,7 @@ tic = time.time()
 
 (result_3d_dict,
  result_2d_dict,
- check_dict) = groutine.get_single_branch_split_delay_field(grating_pair=grating_list,
+ check_dict) = groutine.get_split_delay_single_branch_field(grating_pair=grating_list,
                                                             channel_cuts=crystal_list_2,
                                                             total_path=total_path,
                                                             observation=observation,
@@ -298,7 +293,7 @@ tic = time.time()
                                                             z_idx_range=z_idx_range,
                                                             num1=num1,
                                                             num2=num2,
-                                                            d_num=d_num)
+                                                            d_num=512)
 
 toc = time.time()
 print("It takes {:.2f} seconds to get the field for branch 2.".format(toc - tic))
