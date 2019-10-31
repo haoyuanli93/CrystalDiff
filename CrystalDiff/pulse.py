@@ -39,9 +39,9 @@ class GaussianPulse3D:
         the positive z direction.
         :param central_energy:
         :param polar:
-        :param sigma_x:
-        :param sigma_y:
-        :param sigma_z:
+        :param sigma_x: The unit is fs. However, in the function, it's converted into um.
+        :param sigma_y: The unit is fs. However, in the function, it's converted into um.
+        :param sigma_z: The unit is fs. However, in the function, it's converted into um.
         :param x0:
         :return:
         """
