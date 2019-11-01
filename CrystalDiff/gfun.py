@@ -922,12 +922,12 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
         second_factor = complex(1.) - complex(math.exp(-nhk.imag) * math.cos(nhk.real),
                                               math.exp(-nhk.imag) * math.sin(nhk.real))
 
-        factor = 1.j / math.pi * first_factor * second_factor
+        factor = 1.j / complex(2. * math.pi * order) * first_factor * second_factor
 
         # Step 2: Update the coefficient
-        efield_grid[row, 0] *= factor
-        efield_grid[row, 1] *= factor
-        efield_grid[row, 2] *= factor
+        efield_grid[row, 0] = factor * efield_grid[row, 0]
+        efield_grid[row, 1] = factor * efield_grid[row, 1]
+        efield_grid[row, 2] = factor * efield_grid[row, 2]
 
         # Step 3: Update the momentum and the length of the momentum
         kout_grid[row, 0] = kin_grid[row, 0] + order * grating_k[0]

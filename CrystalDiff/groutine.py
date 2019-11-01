@@ -72,7 +72,7 @@ def get_split_delay_single_branch_field_shear_fix(grating_pair, channel_cuts, sh
     component_final_points = np.ascontiguousarray(np.zeros((number_z, 3), dtype=np.float64))
     remaining_length = np.ascontiguousarray(np.zeros(number_z, dtype=np.float64))
     phase_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
-    jacob_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.float64))
+    jacob_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
 
     cuda_intersect = cuda.to_device(intersect_points)
     cuda_final_points = cuda.to_device(component_final_points)
@@ -531,6 +531,8 @@ def get_split_delay_single_branch_field_shear_fix(grating_pair, channel_cuts, sh
                   "remaining_length": remaining_length,
                   "phase_grid": phase_grid,
                   "jacob_grid": jacob_grid,
+                  "scalar_spec": scalar_spec_holder,
+                  "coef_grid": coef_grid,
                   "reflectivity_pi": reflect_pi,
                   "reflectivity_sigma": reflect_sigma,
                   "reflectivity_pi_tot": reflect_total_pi,
@@ -614,7 +616,7 @@ def get_split_delay_single_branch_field(grating_pair, channel_cuts,
     component_final_points = np.ascontiguousarray(np.zeros((number_z, 3), dtype=np.float64))
     remaining_length = np.ascontiguousarray(np.zeros(number_z, dtype=np.float64))
     phase_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
-    jacob_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.float64))
+    jacob_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
 
     cuda_intersect = cuda.to_device(intersect_points)
     cuda_final_points = cuda.to_device(component_final_points)
@@ -1014,6 +1016,8 @@ def get_split_delay_single_branch_field(grating_pair, channel_cuts,
                   "component_final_points": component_final_points,
                   "remaining_length": remaining_length,
                   "phase_grid": phase_grid,
+                  "scalar_spec": scalar_spec_holder,
+                  "coef_grid": coef_grid,
                   "jacob_grid": jacob_grid,
                   "reflectivity_pi": reflect_pi,
                   "reflectivity_sigma": reflect_sigma,
