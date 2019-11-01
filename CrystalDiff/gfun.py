@@ -67,7 +67,7 @@ def init_kvec_dumond(kvec_grid, klen_grid, x_coef, y_coef, z_coef, num):
         kvec_grid[idx, 2] = klen_grid[idx] * z_coef
 
 
-@cuda.jit("void(float64[:], int64)")
+@cuda.jit("void(complex128[:], int64)")
 def init_jacobian(jacobian, num):
     """
 
@@ -78,7 +78,7 @@ def init_jacobian(jacobian, num):
 
     idx = cuda.grid(1)
     if idx < num:
-        jacobian[idx] = 1.
+        jacobian[idx] = complex(1.)
 
 
 @cuda.jit("void(complex128[:], int64)")
@@ -447,10 +447,10 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
         p_value = complex((kout_x * kin_x +
                            kout_y * kin_y +
                            kout_z * kin_z) / (klen ** 2))
-        b_polar = complex(b) * p_value
+        bp = b_complex * p_value
 
         # Get sqrt(alpha**2 + beta**2) value
-        sqrt_a2_b2 = cmath.sqrt(alpha_tidle ** 2 + b_polar * p_value * chih_pi * chihbar_pi)
+        sqrt_a2_b2 = cmath.sqrt(alpha_tidle ** 2 + bp * p_value * chih_pi * chihbar_pi)
 
         # Because this is a thick crystal, only one mode will be activated.
         if sqrt_a2_b2.imag < 0:
@@ -470,13 +470,13 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
             numerator = 1. - magnitude * phase
             denominator = alpha_tidle * numerator + sqrt_a2_b2 * (2. - numerator)
             # Assemble everything
-            reflectivity_pi[idx] = b_polar * chih_pi * numerator / denominator
+            reflectivity_pi[idx] = bp * chih_pi * numerator / denominator
 
         else:
             # Calculate some intermediate part
             denominator = alpha_tidle + sqrt_a2_b2
             # Assemble everything
-            reflectivity_pi[idx] = b_polar * chih_pi / denominator
+            reflectivity_pi[idx] = bp * chih_pi / denominator
 
         # Get the output electric field due to this component
         efield_out_pi_x = reflectivity_pi[idx] * efield_pi * complex(pi_out_x)
@@ -495,7 +495,7 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
 #          Backward propagation
 ###################################################################################################
 @cuda.jit('void'
-          '(float64[:,:], float64[:],'
+          '(float64[:,:], complex128[:],'
           'float64[:], float64[:,:], '
           'float64[:], float64[:], float64, float64, '
           'int64)')
@@ -553,7 +553,7 @@ def get_kin_and_jacobian(kin_grid, jacobian_grid,
         kin_grid[idx, 2] = kout_z - h[2] - m_trans * n[2]
 
         # Get the jacobian grid
-        jacobian_grid[idx] *= math.fabs(dot_kn / (dot_kn - dot_hn - m_trans))
+        jacobian_grid[idx] *= complex(math.fabs(dot_kn / (dot_kn - dot_hn - m_trans)))
 
 
 @cuda.jit("void(float64[:], float64[:,:],"

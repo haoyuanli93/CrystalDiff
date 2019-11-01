@@ -1095,7 +1095,7 @@ def get_delay_line_field(channel_cuts,
     component_final_points = np.ascontiguousarray(np.zeros((number_z, 3), dtype=np.float64))
     remaining_length = np.ascontiguousarray(np.zeros(number_z, dtype=np.float64))
     phase_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
-    jacob_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.float64))
+    jacob_grid = np.ascontiguousarray(np.ones(number_z, dtype=np.complex128))
 
     cuda_intersect = cuda.to_device(intersect_points)
     cuda_final_points = cuda.to_device(component_final_points)
@@ -1276,7 +1276,7 @@ def get_delay_line_field(channel_cuts,
                                                                   cuda_reflect_total_pi,
                                                                   cuda_reflect_total_pi,
                                                                   number_z)
-
+            # """
             # --------------------------------------------------------------------
             #  Step 8. Get the propagation phase
             # --------------------------------------------------------------------
@@ -1300,7 +1300,7 @@ def get_delay_line_field(channel_cuts,
                                                                           cuda_spec_vec,
                                                                           cuda_spec_vec,
                                                                           number_z)
-
+            # """
             # --------------------------------------------------------------------
             #  Step 9. Goes from the reciprocal space to the real space
             # --------------------------------------------------------------------
