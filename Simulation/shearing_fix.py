@@ -268,8 +268,8 @@ number_z = 10 ** 5
 kx_grid, ky_grid, kz_grid, axis_info = lclsutil.get_k_mesh_3d(number_x=number_x,
                                                               number_y=number_y,
                                                               number_z=number_z,
-                                                              delta_e_x=7.5e-5,
-                                                              delta_e_y=7.5e-5,
+                                                              delta_e_x=3e-5,
+                                                              delta_e_y=3e-5,
                                                               delta_e_z=1e-3 / util.c)
 kz_grid += my_pulse.klen0
 

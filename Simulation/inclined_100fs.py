@@ -209,9 +209,9 @@ number_z = 10 ** 5
 kx_grid, ky_grid, kz_grid, axis_info = lclsutil.get_k_mesh_3d(number_x=number_x,
                                                               number_y=number_y,
                                                               number_z=number_z,
-                                                              delta_e_x=7.5e-5,
-                                                              delta_e_y=7.5e-5,
-                                                              delta_e_z=1e-4 / util.c)
+                                                              delta_e_x=3e-5,
+                                                              delta_e_y=3e-5,
+                                                              delta_e_z=4e-4 / util.c)
 kz_grid += my_pulse.klen0
 
 # Apply fft shift
@@ -226,9 +226,9 @@ kz_grid = np.ascontiguousarray(np.fft.fftshift(kz_grid))
 ############################################################################################################
 
 # Set the range of the index to save
-z_idx_range = 300
-num1 = 250
-num2 = 50
+z_idx_range = 1000
+num1 = 700
+num2 = 300
 d_num = 512
 
 # -------------------------------------------------------------
