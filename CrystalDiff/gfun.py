@@ -446,8 +446,8 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
         # Get the polarization factor with the asymmetric factor b.
         sin_theta = (dot_kh - h_square - m_trans * dot_hn) / klen / h_len
 
-        p_value = 1 - 2 * sin_theta ** 2
-        b_polar = complex(b * p_value)
+        p_value = complex(1 - 2 * sin_theta ** 2)
+        b_polar = complex(b) * p_value
 
         # Get sqrt(alpha**2 + beta**2) value
         sqrt_a2_b2 = cmath.sqrt(alpha_tidle ** 2 + b_polar * p_value * chih_pi * chihbar_pi)
