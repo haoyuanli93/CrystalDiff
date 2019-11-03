@@ -6,6 +6,7 @@ fs, um are the units
 
 import numpy as np
 import scipy.special as ss
+from scipy.spatial.transform import Rotation
 
 from CrystalDiff import util
 
@@ -257,6 +258,18 @@ class RectangleGrating:
         # The shift of the space does not change the reciprocal lattice and the normal direction
         self.direction = np.ascontiguousarray(rot_mat.dot(self.direction))
         self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
+
+        # Update h and wave vector
+        self.__update_h()
+        self.__update_period_wave_vector()
+
+    def rotate_around_surface_point(self, eular_angle):
+        # Get the rotation matrix
+        rot_mat = Rotation.from_euler('xyz', eular_angle, degrees=False)
+
+        # The shift of the space does not change the reciprocal lattice and the normal direction
+        self.direction = np.ascontiguousarray(rot_mat.as_dcm().dot(self.direction))
+        self.normal = np.ascontiguousarray(rot_mat.as_dcm().dot(self.normal))
 
         # Update h and wave vector
         self.__update_h()

@@ -275,13 +275,13 @@ def fill_column_float(holder, source, row_idx, idx_start, num):
 @cuda.jit('void(complex128[:], complex128[:], float64[:,:], complex128[:,:],'
           'float64[:], float64[:,:],'
           'float64, float64[:], float64[:],'
-          'float64, float64, float64,'
+          'float64, float64,'
           'complex128, complex128, complex128, complex128, complex128,'
           'int64)')
 def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_grid,
                          klen_grid, kin_grid,
                          d, h, n,
-                         dot_hn, h_square, h_len,
+                         dot_hn, h_square,
                          chi0, chih_sigma, chihbar_sigma, chih_pi, chihbar_pi,
                          num):
     """
@@ -300,7 +300,6 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
     :param n:
     :param dot_hn:
     :param h_square:
-    :param h_len:
     :param chi0:
     :param chih_sigma:
     :param chihbar_sigma:
