@@ -1,14 +1,8 @@
-import numpy as np
-
-
-def get_kout_with_misalignment(dtheta, my_pulse,
-                               misalign_grating_1=(0., 0., 0.,),
-                               misalign_grating_2=(0., 0., 0.,),
-                               misalign_branch_1_crystal_1=(0., 0., 0.),
-                               misalign_branch_1_crystal_2=(0., 0., 0.),
-                               misalign_branch_2_crystal_1=(0., 0., 0.),
-                               misalign_branch_2_crystal_2=(0., 0., 0.),
-                               ):
+def get_kout_with_misalignment(deflect_angle, pulse_obj,
+                               misalign_g1=(0., 0., 0.,),
+                               misalign_g2=(0., 0., 0.,),
+                               misalign_b1=None,
+                               misalign_b2=None):
     """
     All the misalignment arguments have a unit of radiant.
     These misalignment are represented with eular angle 'xyz'. I believe that this means that
@@ -17,14 +11,14 @@ def get_kout_with_misalignment(dtheta, my_pulse,
     However, that should not matter too much, since in this function, there is only one
     rotation around one axis.
 
-    :param dtheta:
-    :param my_pulse:
-    :param misalign_grating_1:
-    :param misalign_grating_2:
-    :param misalign_branch_1_crystal_1:
-    :param misalign_branch_1_crystal_2:
-    :param misalign_branch_2_crystal_1:
-    :param misalign_branch_2_crystal_2:
+    :param deflect_angle:
+    :param pulse_obj:
+    :param misalign_g1:
+    :param misalign_g2:
+    :param misalign_b1_c1:
+    :param misalign_b1_c2:
+    :param misalign_b2_c1:
+    :param misalign_b2_c2:
     :return:
     """
     # ----------------------------------------------------------------------------------------------------------
@@ -32,13 +26,13 @@ def get_kout_with_misalignment(dtheta, my_pulse,
     # ----------------------------------------------------------------------------------------------------------
     grating_list = [crystal.RectangleGrating(), crystal.RectangleGrating()]
 
-    grating_list[0].set_a(util.get_grating_period(dtheta=dtheta, klen_in=my_pulse.klen0) / 2)
-    grating_list[0].set_b(util.get_grating_period(dtheta=dtheta, klen_in=my_pulse.klen0) / 2)
-    grating_list[0].rotate_around_surface_point(eular_angle=misalign_grating_1)
+    grating_list[0].set_a(util.get_grating_period(dtheta=deflect_angle, klen_in=pulse_obj.klen0) / 2)
+    grating_list[0].set_b(util.get_grating_period(dtheta=deflect_angle, klen_in=pulse_obj.klen0) / 2)
+    grating_list[0].rotate_around_surface_point(eular_angle=misalign_g1)
 
-    grating_list[1].set_a(util.get_grating_period(dtheta=dtheta, klen_in=my_pulse.klen0) / 2)
-    grating_list[1].set_b(util.get_grating_period(dtheta=dtheta, klen_in=my_pulse.klen0) / 2)
-    grating_list[1].rotate_around_surface_point(eular_angle=misalign_grating_2)
+    grating_list[1].set_a(util.get_grating_period(dtheta=deflect_angle, klen_in=pulse_obj.klen0) / 2)
+    grating_list[1].set_b(util.get_grating_period(dtheta=deflect_angle, klen_in=pulse_obj.klen0) / 2)
+    grating_list[1].rotate_around_surface_point(eular_angle=misalign_g2)
 
     # ----------------------------------------------------------------------------------------------------------
     #                       Step 3: Delay Lines
@@ -59,7 +53,7 @@ def get_kout_with_misalignment(dtheta, my_pulse,
     #                       Crystal for branch  1
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Set up the angles
-    angle_offset_1 = dtheta
+    angle_offset_1 = deflect_angle
     bragg_angle_1 = np.radians(18.836) + 13e-6
 
     branch_angle_1 = lclsutil.get_delay_line_angles(angle_offset=angle_offset_1,
@@ -79,14 +73,13 @@ def get_kout_with_misalignment(dtheta, my_pulse,
                                                             chi0=chi0,
                                                             chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
                                                             chih_pi=chih_pi, chihbar_pi=chihbar_pi,
-                                                            misalign_1=misalign_branch_1_crystal_1,
-                                                            misalign_2=misalign_branch_1_crystal_2)
+                                                            misalign=misalign_b1)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #                       Crystal for branch  2
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Set up the angles
-    angle_offset_2 = - dtheta
+    angle_offset_2 = - deflect_angle
     bragg_angle_2 = np.radians(18.836) + 13e-6
 
     branch_angle_2 = lclsutil.get_delay_line_angles(angle_offset=angle_offset_2,
@@ -104,8 +97,7 @@ def get_kout_with_misalignment(dtheta, my_pulse,
                                                             chi0=chi0,
                                                             chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
                                                             chih_pi=chih_pi, chihbar_pi=chihbar_pi,
-                                                            misalign_1=misalign_branch_2_crystal_1,
-                                                            misalign_2=misalign_branch_2_crystal_2)
+                                                            misalign=misalign_b2)
 
     # ------------------------------------------------------
     #   Define the positions
@@ -122,15 +114,15 @@ def get_kout_with_misalignment(dtheta, my_pulse,
                                                            fix_branch_crystal=crystal_list_2,
                                                            var_branch_crystal=crystal_list_1,
                                                            grating_pair=grating_list,
-                                                           pulse_obj=my_pulse)
-    (intersect_brunch_1,
-     kout_brunch_1,
-     intersect_brunch_2,
-     kout_brunch_2) = lclsutil.get_light_path(pulse_obj=my_pulse,
+                                                           kin=pulse_obj.k0)
+    (intersect_branch_1,
+     kout_branch_1,
+     intersect_branch_2,
+     kout_branch_2) = lclsutil.get_light_path(kin=pulse_obj.k0,
                                               grating_list=grating_list,
                                               crystal_list_1=crystal_list_1,
                                               path_list_1=path_list_1,
                                               crystal_list_2=crystal_list_2,
                                               path_list_2=path_list_2)
 
-    return intersect_brunch_1, kout_brunch_1, intersect_brunch_2, kout_brunch_2
+    return intersect_branch_1, kout_branch_1, intersect_branch_2, kout_branch_2

@@ -386,7 +386,7 @@ def get_crystal_list_delay_branch(hlen_vals,
                                   theta_vals, rho_vals, tau_vals,
                                   surface_points,
                                   chi0, chih_sigma, chih_pi, chihbar_sigma, chihbar_pi,
-                                  misalign=None):
+                                  misalign_1=None, misalign_2=None):
     """
     This function is designed for the new split-delay specifically.
 
@@ -400,7 +400,7 @@ def get_crystal_list_delay_branch(hlen_vals,
     :param chih_pi:
     :param chihbar_sigma:
     :param chihbar_pi:
-    :param misalign: The misalignment of the first channel-cut crystal.
+    :param misalign_1: The misalignment of the first channel-cut crystal.
                         This is a (2,) numpy array with a detype of float64
 
                         The first value is the rotation along the x axis.
@@ -414,6 +414,8 @@ def get_crystal_list_delay_branch(hlen_vals,
 
                         One first apply the x axis rotation. Then apply the y axis rotation.
                         In the end the z axis rotation
+
+    :param misalign_2: The misalignment of the second channel-cut crystal.
     :return:
     """
     # First get the list
@@ -425,7 +427,7 @@ def get_crystal_list_delay_branch(hlen_vals,
     # ----------------------------------------------
 
     # Process the first channel-cut crystal
-    for idx in range(4):
+    for idx in range(2):
 
         # Extract the crystal object
         my_crystal = crystal_list[idx]
@@ -440,13 +442,59 @@ def get_crystal_list_delay_branch(hlen_vals,
         normal_holder[1] = 1.
 
         # If there is a misalignment, then rotate this holder
-        if misalign:
+        if misalign_1:
             # Get the rotation matrix
-            cc_rot_1 = Rotation.from_euler('xyz', misalign[idx], degrees=False)
+            cc_rot_1 = Rotation.from_euler('xyz', misalign_1, degrees=False)
 
             # Rotate the holder
             h_holder = np.dot(cc_rot_1.as_dcm(), h_holder)
             normal_holder = np.dot(cc_rot_1.as_dcm(), normal_holder)
+
+        # Apply the geometric configuration for the h vector
+        rot_mat = Rotation.from_euler('x', np.pi / 2. - theta_vals[idx])
+        my_crystal.set_h(np.dot(rot_mat.as_dcm(), h_holder))
+
+        # Apply the geometric configuration for the normal vector
+        rot_mat = Rotation.from_euler("zxy", [-tau_vals[idx],
+                                              np.pi / 2 - rho_vals[idx],
+                                              0])
+
+        my_crystal.set_surface_normal(rot_mat.as_dcm().dot(normal_holder))
+
+        # Set the surface point
+        my_crystal.set_surface_position(surface_points[idx])
+
+        # ----------------------------------------------
+        # Set chi values
+        # ----------------------------------------------
+        my_crystal.set_chi0(chi0)
+        my_crystal.set_chih_sigma(chih_sigma)
+        my_crystal.set_chihbar_sigma(chihbar_sigma)
+        my_crystal.set_chih_pi(chih_pi)
+        my_crystal.set_chihbar_pi(chihbar_pi)
+
+    # Process the second channel-cut crystal
+    for idx in range(2, 4):
+        # Extract the crystal object
+        my_crystal = crystal_list[idx]
+        my_crystal.set_thickness(1e6)
+
+        # Set the h vector
+        h_holder = np.zeros(3, dtype=np.float64)
+        h_holder[1] = hlen_vals[idx]
+
+        # Set the normal holder
+        normal_holder = np.zeros(3, dtype=np.float64)
+        normal_holder[1] = 1.
+
+        # If there is a misalignment, then rotate this holder
+        if misalign_2:
+            # Get the rotation matrix
+            cc_rot_2 = Rotation.from_euler('xyz', misalign_2, degrees=False)
+
+            # Rotate the holder
+            h_holder = np.dot(cc_rot_2.as_dcm(), h_holder)
+            normal_holder = np.dot(cc_rot_2.as_dcm(), normal_holder)
 
         # Apply the geometric configuration for the h vector
         rot_mat = Rotation.from_euler('x', np.pi / 2. - theta_vals[idx])
