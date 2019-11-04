@@ -15,10 +15,8 @@ def get_kout_with_misalignment(deflect_angle, pulse_obj,
     :param pulse_obj:
     :param misalign_g1:
     :param misalign_g2:
-    :param misalign_b1_c1:
-    :param misalign_b1_c2:
-    :param misalign_b2_c1:
-    :param misalign_b2_c2:
+    :param misalign_b1：
+    :param misalign_b2:
     :return:
     """
     # ----------------------------------------------------------------------------------------------------------

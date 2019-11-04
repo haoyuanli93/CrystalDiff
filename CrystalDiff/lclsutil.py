@@ -440,13 +440,13 @@ def get_crystal_list_delay_branch(hlen_vals,
         normal_holder[1] = 1.
 
         # If there is a misalignment, then rotate this holder
-        if misalign:
+        if misalign is not None:
             # Get the rotation matrix
-            cc_rot_1 = Rotation.from_euler('xyz', misalign[idx], degrees=False)
+            cc_rot = Rotation.from_euler('xyz', misalign[idx], degrees=False)
 
             # Rotate the holder
-            h_holder = np.dot(cc_rot_1.as_dcm(), h_holder)
-            normal_holder = np.dot(cc_rot_1.as_dcm(), normal_holder)
+            h_holder = np.dot(cc_rot.as_dcm(), h_holder)
+            normal_holder = np.dot(cc_rot.as_dcm(), normal_holder)
 
         # Apply the geometric configuration for the h vector
         rot_mat = Rotation.from_euler('x', np.pi / 2. - theta_vals[idx])
