@@ -86,7 +86,9 @@ shear_fix_crystal = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
                                                            surface_points=surface_points_0,
                                                            chi0=chi0,
                                                            chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
-                                                           chih_pi=chih_pi, chihbar_pi=chihbar_pi)
+                                                           chih_pi=chih_pi, chihbar_pi=chihbar_pi,
+                                                           misalign_1=misalign_branch_0_crystal_1,
+                                                           misalign_2=misalign_branch_0_crystal_2)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                       Crystal for branch  1
@@ -113,7 +115,9 @@ crystal_list_1 = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
                                                         surface_points=surface_points_1,
                                                         chi0=chi0,
                                                         chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
-                                                        chih_pi=chih_pi, chihbar_pi=chihbar_pi)
+                                                        chih_pi=chih_pi, chihbar_pi=chihbar_pi,
+                                                        misalign_1=misalign_branch_1_crystal_1,
+                                                        misalign_2=misalign_branch_1_crystal_2)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                       Crystal for branch  2
@@ -125,7 +129,7 @@ bragg_angle_2 = np.radians(18.836) + 13e-6
 branch_angle_2 = lclsutil.get_delay_line_angles(angle_offset=angle_offset_2,
                                                 theta=1.5 * np.pi - bragg_angle_2,
                                                 rho=0.5 * np.pi - bragg_angle_2,
-                                                inclined_angle=np.radians(10.))
+                                                inclined_angle=np.radians(-10.))
 surface_points_2 = np.zeros((reflect_num, 3), dtype=np.float64)
 
 # Set the misalignment angle
@@ -140,7 +144,9 @@ crystal_list_2 = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
                                                         surface_points=surface_points_2,
                                                         chi0=chi0,
                                                         chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
-                                                        chih_pi=chih_pi, chihbar_pi=chihbar_pi)
+                                                        chih_pi=chih_pi, chihbar_pi=chihbar_pi,
+                                                        misalign_1=misalign_branch_2_crystal_1,
+                                                        misalign_2=misalign_branch_2_crystal_2)
 
 # ------------------------------------------------------
 #   Define the positions
@@ -197,7 +203,9 @@ shear_fix_crystal = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
                                                            surface_points=np.copy(intersect_branch_0),
                                                            chi0=chi0,
                                                            chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
-                                                           chih_pi=chih_pi, chihbar_pi=chihbar_pi)
+                                                           chih_pi=chih_pi, chihbar_pi=chihbar_pi,
+                                                           misalign_1=misalign_branch_0_crystal_1,
+                                                           misalign_2=misalign_branch_0_crystal_2)
 
 # Initialize the crystals
 crystal_list_1 = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
@@ -207,7 +215,9 @@ crystal_list_1 = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
                                                         surface_points=np.copy(intersect_branch_1[1:5]),
                                                         chi0=chi0,
                                                         chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
-                                                        chih_pi=chih_pi, chihbar_pi=chihbar_pi)
+                                                        chih_pi=chih_pi, chihbar_pi=chihbar_pi,
+                                                        misalign_1=misalign_branch_1_crystal_1,
+                                                        misalign_2=misalign_branch_1_crystal_2)
 # Initialize the crystals
 crystal_list_2 = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
                                                         theta_vals=branch_angle_2[0],
@@ -216,7 +226,9 @@ crystal_list_2 = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
                                                         surface_points=np.copy(intersect_branch_2[1:5]),
                                                         chi0=chi0,
                                                         chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
-                                                        chih_pi=chih_pi, chihbar_pi=chihbar_pi)
+                                                        chih_pi=chih_pi, chihbar_pi=chihbar_pi,
+                                                        misalign_1=misalign_branch_2_crystal_1,
+                                                        misalign_2=misalign_branch_2_crystal_2)
 
 grating_list[0].set_surface_point(np.copy(intersect_branch_2[0]))
 grating_list[1].set_surface_point(np.copy(intersect_branch_2[-2]))
@@ -256,8 +268,8 @@ number_z = 10 ** 5
 kx_grid, ky_grid, kz_grid, axis_info = lclsutil.get_k_mesh_3d(number_x=number_x,
                                                               number_y=number_y,
                                                               number_z=number_z,
-                                                              delta_e_x=1e-4,
-                                                              delta_e_y=1e-4,
+                                                              delta_e_x=3e-5,
+                                                              delta_e_y=3e-5,
                                                               delta_e_z=1e-3 / util.c)
 kz_grid += my_pulse.klen0
 
@@ -273,9 +285,9 @@ kz_grid = np.ascontiguousarray(np.fft.fftshift(kz_grid))
 ############################################################################################################
 
 # Set the range of the index to save
-z_idx_range = 600
-num1 = 550
-num2 = 50
+z_idx_range = 300
+num1 = 270
+num2 = 30
 d_num = 512
 
 # -------------------------------------------------------------

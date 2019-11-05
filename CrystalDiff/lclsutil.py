@@ -283,7 +283,7 @@ def get_delay_line_angles(angle_offset, theta, rho,
                          - rho,
                          np.pi - rho + asymmetric_angle]) + angle_offset
 
-    tau_vals = np.array([- inclined_angle, inclined_angle, inclined_angle, - inclined_angle])
+    tau_vals = np.array([0, inclined_angle, inclined_angle, 0])
     # tau_vals = np.array([inclined_angle, inclined_angle, - inclined_angle, - inclined_angle])
 
     return theta_vals, rho_vals, tau_vals
