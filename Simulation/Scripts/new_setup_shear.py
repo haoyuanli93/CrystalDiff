@@ -4,7 +4,7 @@ import time
 import h5py as h5
 import numpy as np
 
-sys.path.append(r"C:\Users\haoyuan\Documents\GitHub\CrystalDiff")
+sys.path.append(r"/home/haoyuan/my_repos/CrystalDiff")
 
 from CrystalDiff import util, pulse, lclsutil, crystal, lightpath, groutine
 
