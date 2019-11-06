@@ -15,10 +15,12 @@ def get_kout_with_misalignment(deflect_angle, pulse_obj,
     :param pulse_obj:
     :param misalign_g1:
     :param misalign_g2:
-    :param misalign_b1：
+    :param misalign_b1:
     :param misalign_b2:
     :return:
     """
+
+
     # ----------------------------------------------------------------------------------------------------------
     #                       Step 2: Split
     # ----------------------------------------------------------------------------------------------------------
@@ -47,6 +49,28 @@ def get_kout_with_misalignment(deflect_angle, pulse_obj,
     chih_pi = complex(0.46945E-05, -0.11201E-06)
     chihbar_pi = complex(0.46945E-05, -0.11201E-06)
 
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #                       Crystal to fix the shearing
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # Set up the angles
+    angle_offset_0 = 0.
+    bragg_angle_0 = np.radians(18.836) + 13e-6
+
+    branch_angle_0 = lclsutil.get_delay_line_angles(angle_offset=angle_offset_0,
+                                                    theta=bragg_angle_0 + np.pi / 2.,
+                                                    rho=bragg_angle_0 - np.pi / 2.,
+                                                    inclined_angle=np.radians(-10.))
+    surface_points_0 = np.zeros((reflect_num, 3), dtype=np.float64)
+
+    # Initialize the crystals
+    shear_fix_crystal = lclsutil.get_crystal_list_delay_branch(hlen_vals=hlen_vals,
+                                                               theta_vals=branch_angle_0[0],
+                                                               rho_vals=branch_angle_0[1],
+                                                               tau_vals=branch_angle_0[2],
+                                                               surface_points=surface_points_0,
+                                                               chi0=chi0,
+                                                               chih_sigma=chih_sigma, chihbar_sigma=chihbar_sigma,
+                                                               chih_pi=chih_pi, chihbar_pi=chihbar_pi)
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #                       Crystal for branch  1
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -104,6 +128,12 @@ def get_kout_with_misalignment(deflect_angle, pulse_obj,
     path_list_2 = [5e6, 1e5, 1e5, 1.05e5, 6e6, 1e6]
     delay_time = 800.
 
+    # Get the positions for the shearing fix branch
+    (intersect_branch_0,
+     kout_branch_0) = lclsutil.get_point_with_definite_path(kin_vec=my_pulse.k0,
+                                                            path_sections=path_list_0,
+                                                            crystal_list=shear_fix_crystal)
+
     # Adjust the path sections
     (path_list_1,
      path_list_2) = lclsutil.get_split_delay_configuration(delay_time=delay_time,
@@ -112,15 +142,17 @@ def get_kout_with_misalignment(deflect_angle, pulse_obj,
                                                            fix_branch_crystal=crystal_list_2,
                                                            var_branch_crystal=crystal_list_1,
                                                            grating_pair=grating_list,
-                                                           kin=pulse_obj.k0)
+                                                           kin=kout_branch_0[-1])
+
     (intersect_branch_1,
-     kout_branch_1,
+     kout_brunch_1,
      intersect_branch_2,
-     kout_branch_2) = lclsutil.get_light_path(kin=pulse_obj.k0,
+     kout_brunch_2) = lclsutil.get_light_path(kin=kout_branch_0[-1],
                                               grating_list=grating_list,
                                               crystal_list_1=crystal_list_1,
                                               path_list_1=path_list_1,
                                               crystal_list_2=crystal_list_2,
                                               path_list_2=path_list_2)
+
 
     return intersect_branch_1, kout_branch_1, intersect_branch_2, kout_branch_2

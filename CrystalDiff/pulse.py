@@ -61,9 +61,13 @@ class GaussianPulse3D:
                            sigma_y=sigma_y,
                            sigma_z=sigma_z)
 
-        # Normalize the pulse such that the incident total energy is 100uJ.
-        self.scaling = self.sigma_x * self.sigma_y * self.sigma_z * (util.c ** 3) * np.power(np.pi, 1.5)
-        self.scaling = complex(1e14 / self.scaling)
+        # Normalize the pulse such that the incident total energy is 1 au
+        # Then in this case, if one instead calculate the square L2 norm of the spectrum, then
+        # the value is 8 * pi ** 3
+        self.scaling = 2. * np.sqrt(2) * np.power(np.pi, 0.75) * np.sqrt(sigma_x *
+                                                                         sigma_y *
+                                                                         sigma_z *
+                                                                         (util.c ** 3))
 
     def set_sigma_mat(self, sigma_x, sigma_y, sigma_z):
         """

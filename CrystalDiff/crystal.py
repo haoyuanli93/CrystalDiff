@@ -51,7 +51,7 @@ class CrystalBlock3D:
         self.chihbar_pi = complex(0.37824E-05, -0.12060E-07)
 
         #############################
-        # Second level of parameters. These parameters can be handy in the simulation
+        # Second level of parameters. These parameters can be handy in the simulation_2019_11_5_2
         #############################
         self.dot_hn = np.dot(self.h, self.normal)
         self.h_square = self.h[0] ** 2 + self.h[1] ** 2 + self.h[2] ** 2

@@ -16,15 +16,6 @@ c = 299792458. * 1e-9  # The speed of light in um / fs
 # --------------------------------------------------------------
 #               Simple functions
 # --------------------------------------------------------------
-def time_stamp():
-    """
-    Get a time stamp
-    :return: A time stamp of the form '%Y_%m_%d_%H_%M_%S'
-    """
-    stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S')
-    return stamp
-
-
 def exp_stable(x):
     """
     This function calculate the exponential of a complex variable in a stable way.
@@ -92,185 +83,50 @@ def wave_number_to_kev(wavevec):
 
 
 # --------------------------------------------------------------
-#          Get wave vectors
+#          Get output wave vectors
 # --------------------------------------------------------------
-def get_gamma_h_3d(k0_grid, k_grid, crystal_h, crystal_normal):
+def get_bragg_kout(kin, h, normal, compare_length=False):
+    """
+    This function produce the output wave vector from a Bragg reflection.
+
+    :param kin: (3,) numpy array. The incident wave vector
+    :param h: The reciprocal lattice of the crystal
+    :param normal: The normal direction of the reflection surface.
+                    For a bragg reflection, n is pointing to the inside of the crystal.
+    :param compare_length: Whether compare the length of the incident wave vector and the output wave vector
+
+    :return: kout: (3,) numpy array. The diffraction wave vector.
+            ratio: When compare_length=True, the second output is the ratio between the incident wave number
+                                        and the output wave number.
     """
 
-    :param k0_grid: A array of wavevectors. The last dimension is each specific wave vectors
-    :param k_grid: The length of the array of the wave vectors
-    :param crystal_h: The reciprocal for the diffraction
-    :param crystal_normal: The normal direction of the lattice
-    :return:
-    """
-    return np.divide(np.dot(k0_grid, crystal_normal) + np.dot(crystal_h, crystal_normal), k_grid)
+    # kout holder
+    kout = kin + h
+
+    # Incident wave number
+    klen = np.sqrt(np.dot(kin, kin))
+
+    # Get gamma and alpha
+    gammah = np.dot(kin + h, normal) / klen
+    alpha = (2 * np.dot(kin, h) + np.dot(h, h)) / np.square(klen)
+
+    if np.abs(-gammah - np.sqrt(gammah ** 2 - alpha)) > np.abs(-gammah + np.sqrt(gammah ** 2 - alpha)):
+        momentum = klen * (-gammah + np.sqrt(gammah ** 2 - alpha))
+    else:
+        momentum = klen * (-gammah - np.sqrt(gammah ** 2 - alpha))
+
+    # Add momentum transfer
+    kout += normal * momentum
+
+    if compare_length:
+        return kout, klen / l2_norm(kout)
+    else:
+        return kout
 
 
-def get_gamma_0_3d(k0_grid, k_grid, crystal_normal):
-    """
-
-    :param k0_grid: A array of wavevectors. The last dimension is each specific wave vectors
-    :param k_grid: The length of the array of the wave vectors
-    :param crystal_normal: The normal direction of the lattice
-    :return:
-    """
-    return np.divide(np.dot(k0_grid, crystal_normal), k_grid)
-
-
-def get_rho_h_3d(kh_grid, k_grid, crystal_h, crystal_normal):
-    """
-    This parameter is used to derive the incident wave vector from the reflected wave vector
-
-    :param kh_grid:
-    :param k_grid:
-    :param crystal_h:
-    :param crystal_normal:
-    :return:
-    """
-    return np.divide(np.dot(crystal_h, crystal_normal) - np.dot(kh_grid, crystal_normal), k_grid)
-
-
-def get_alpha_3d(k0_grid, k_grid, crystal_h):
-    """
-
-    :param k0_grid:
-    :param k_grid:
-    :param crystal_h:
-    :return:
-    """
-    return np.divide(2 * np.dot(k0_grid, crystal_h) + l2_square(crystal_h),
-                     np.square(k_grid))
-
-
-def get_epsilon_3d(kh_grid, k_grid, crystal_h):
-    """
-    This parameter is used to derive the incident wave vector from the reflected wave vector
-
-    :param kh_grid:
-    :param k_grid:
-    :param crystal_h:
-    :return:
-    """
-    return np.divide(l2_square(crystal_h) - 2 * np.dot(kh_grid, crystal_h),
-                     np.square(k_grid))
-
-
-def get_asymmetry_factor_batch(gamma_h_grid, gamma_0_grid):
-    """
-
-    :param gamma_h_grid:
-    :param gamma_0_grid:
-    :return:
-    """
-    return np.divide(gamma_0_grid, gamma_h_grid)
-
-
-def get_momentum_transfer(k_grid, gamma_h_grid, alpha_grid):
-    """
-
-    :param k_grid:
-    :param gamma_h_grid:
-    :param alpha_grid:
-    :return:
-    """
-    tmp = np.sqrt(np.square(gamma_h_grid) - alpha_grid)
-    tmp_plus = np.abs(-gamma_h_grid + tmp)
-    tmp_minus = np.abs(-gamma_h_grid - tmp)
-
-    # Get the sign such that the abs is small
-    sign = np.ones_like(k_grid, dtype=np.float64)
-    sign[tmp_plus > tmp_minus] = -1.
-    tmp = np.multiply(tmp, sign)
-
-    return np.multiply(k_grid, -gamma_h_grid + tmp)
-
-
-def get_momentum_transfer_reverse(k_grid, rho_h_grid, epsilon_grid):
-    """
-
-    :param k_grid:
-    :param rho_h_grid:
-    :param epsilon_grid:
-    :return:
-    """
-    return get_momentum_transfer(k_grid, gamma_h_grid=rho_h_grid, alpha_grid=epsilon_grid)
-
-
-def get_output_wave_vector(k0_grid, k_grid, crystal_h, crystal_normal):
-    """
-    Given the input wave vector, derive the output wave vector
-
-    :param k0_grid:
-    :param k_grid:
-    :param crystal_h:
-    :param crystal_normal:
-    :return:
-    """
-    gamma_h_grid = get_gamma_h_3d(k0_grid=k0_grid,
-                                  k_grid=k_grid,
-                                  crystal_h=crystal_h,
-                                  crystal_normal=crystal_normal)
-    alpha_grid = get_alpha_3d(k0_grid=k0_grid,
-                              k_grid=k_grid,
-                              crystal_h=crystal_h)
-
-    momentum_transfer = get_momentum_transfer(k_grid=k_grid,
-                                              gamma_h_grid=gamma_h_grid,
-                                              alpha_grid=alpha_grid)
-    momentum_transfer = np.multiply(crystal_normal[np.newaxis, :], momentum_transfer[:, np.newaxis])
-
-    kh_grid = k0_grid + crystal_h[np.newaxis, :] + momentum_transfer
-
-    rho_h_grid = get_rho_h_3d(kh_grid=kh_grid,
-                              k_grid=k_grid,
-                              crystal_h=crystal_h,
-                              crystal_normal=crystal_normal)
-    epsilon_grid = get_epsilon_3d(kh_grid=kh_grid,
-                                  k_grid=k_grid,
-                                  crystal_h=crystal_h)
-    return {"kh_grid": kh_grid,
-            "rho_h_grid": rho_h_grid,
-            "epsilon_grid": epsilon_grid}
-
-
-def get_input_wave_vector(kh_grid, k_grid, crystal_h, crystal_normal):
-    """
-    Given the output wave vector, derive the corresponding incident wave vector.
-    :param kh_grid:
-    :param k_grid:
-    :param crystal_h:
-    :param crystal_normal:
-    :return:
-    """
-    rho_h_grid = get_rho_h_3d(kh_grid=kh_grid,
-                              k_grid=k_grid,
-                              crystal_h=crystal_h,
-                              crystal_normal=crystal_normal)
-
-    epsilon_grid = get_epsilon_3d(kh_grid=kh_grid,
-                                  k_grid=k_grid,
-                                  crystal_h=crystal_h)
-
-    momentum_transfer = get_momentum_transfer_reverse(k_grid=k_grid,
-                                                      rho_h_grid=rho_h_grid,
-                                                      epsilon_grid=epsilon_grid)
-    momentum_transfer = np.multiply(crystal_normal[np.newaxis, :], momentum_transfer[:, np.newaxis])
-
-    # get the incident wave vector
-    k0_grid = kh_grid - crystal_h[np.newaxis, :] - momentum_transfer
-
-    gamma_0_grid = get_gamma_0_3d(k0_grid=k0_grid, k_grid=k_grid, crystal_normal=crystal_normal)
-    gamma_h_grid = get_gamma_h_3d(k0_grid=k0_grid, k_grid=k_grid, crystal_normal=crystal_normal,
-                                  crystal_h=crystal_h)
-    alpha_grid = get_alpha_3d(k0_grid=k0_grid,
-                              k_grid=k_grid,
-                              crystal_h=crystal_h)
-    return {"k0_grid": k0_grid,
-            "gamma_0_grid": gamma_0_grid,
-            "gamma_h_grid": gamma_h_grid,
-            "alpha_grid": alpha_grid}
-
-
+# --------------------------------------------------------------
+#          Geometry functions
+# --------------------------------------------------------------
 def get_intersection_point(s, k, n, x0):
     """
     Assume that a line starts from point s along the direction k. It will intersect with
@@ -279,8 +135,8 @@ def get_intersection_point(s, k, n, x0):
 
     This function assumes that the arguments are arrays of points.
 
-    :param s: array of shape [n,3], starting points for each array
-    :param k: array of shape [n,3], the direction for each array
+    :param s: array of shape [3], starting points for each array
+    :param k: array of shape [3], the direction for each array
     :param n: array of shape [3], the normal direction of the surface
     :param x0: array of shape [3], one point on this surface
     :return:
@@ -289,8 +145,8 @@ def get_intersection_point(s, k, n, x0):
     x = np.copy(s)
 
     # Do the math
-    tmp = np.divide(np.dot(x0[np.newaxis, :] - s, n), np.dot(k, n))
-    x += np.multiply(tmp[:, np.newaxis], k)
+    tmp = np.divide(np.dot(x0 - s, n), np.dot(k, n))
+    x += tmp * k
     return x
 
 
@@ -311,46 +167,6 @@ def get_total_path_length(intersection_point_list):
                               intersection_point_list[l])
 
     return total_path
-
-
-# ---------------------------------------------------------------------------
-#                     Post-process
-# ---------------------------------------------------------------------------
-def get_2d_sigma_matrix(density_2d, x_values, y_values):
-    """
-
-    :param density_2d:
-    :param x_values:
-    :param y_values:
-    :return:
-    """
-    # Calculate the  x sigma
-    density_x = np.sum(density_2d, axis=1)
-    mean_x = np.sum(np.multiply(x_values, density_x))
-    mean_x2 = np.sum(np.multiply(np.square(x_values), density_x))
-    cov_xx = mean_x2 - mean_x ** 2
-
-    # Calculate the  y sigma
-    density_y = np.sum(density_2d, axis=0)
-    mean_y = np.sum(np.multiply(y_values, density_y))
-    mean_y2 = np.sum(np.multiply(np.square(y_values), density_y))
-    cov_yy = mean_y2 - mean_y ** 2
-
-    # Calculate the xy sigma
-    tmp = np.multiply(density_2d, x_values[:, np.newaxis])
-    tmp = np.multiply(tmp, y_values[np.newaxis, :])
-    cov_xy = np.sum(tmp) - mean_x * mean_y
-
-    # construct the Sigma matrix
-    sigma_mat = np.zeros((2, 2))
-    sigma_mat[0, 0] = cov_xx
-    sigma_mat[0, 1] = cov_xy
-    sigma_mat[1, 0] = cov_xy
-    sigma_mat[1, 1] = cov_yy
-
-    eig, eig_vals = np.linalg.eig(sigma_mat)
-
-    return sigma_mat, eig, eig_vals
 
 
 # ---------------------------------------------------------------------------
@@ -393,10 +209,11 @@ def get_grating_period(dtheta, klen_in):
     return period
 
 
-############################################################################################
-#                   Save simulation result to h5 file
-############################################################################################
-def save_branch_result_to_h5file(file_name, io_type, branch_name, result_3d_dict, result_2d_dict, check_dict):
+# ---------------------------------------------------------------------------
+#                     IO
+# ---------------------------------------------------------------------------
+def save_branch_result_to_h5file(file_name, io_type, branch_name,
+                                 result_3d_dict, result_2d_dict, check_dict):
     with h5.File(file_name, io_type) as h5file:
         group = h5file.create_group(branch_name)
         # Save the meta data
@@ -411,3 +228,103 @@ def save_branch_result_to_h5file(file_name, io_type, branch_name, result_3d_dict
         group_3d = group.create_group('result_3d')
         for entry in list(result_3d_dict.keys()):
             group_3d.create_dataset(entry, data=result_3d_dict[entry])
+
+
+def time_stamp():
+    """
+    Get a time stamp
+    :return: A time stamp of the form '%Y_%m_%d_%H_%M_%S'
+    """
+    stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y_%m_%d_%H_%M_%S')
+    return stamp
+
+
+# ---------------------------------------------------------------------------
+#                  Get k mesh
+# ---------------------------------------------------------------------------
+
+def get_k_mesh_3d(number_x, number_y, number_z, delta_e_x, delta_e_y, delta_e_z):
+    # Get the corresponding energy mesh
+    energy_grid_x = np.linspace(start=- delta_e_x,
+                                stop=+ delta_e_x,
+                                num=number_x)
+    energy_grid_y = np.linspace(start=- delta_e_y,
+                                stop=+ delta_e_y,
+                                num=number_y)
+    energy_grid_z = np.linspace(start=- delta_e_z,
+                                stop=+ delta_e_z,
+                                num=number_z)
+
+    # Get the k grid
+    kx_grid = np.ascontiguousarray(kev_to_wave_number(energy=energy_grid_x))
+    ky_grid = np.ascontiguousarray(kev_to_wave_number(energy=energy_grid_y))
+    kz_grid = np.ascontiguousarray(kev_to_wave_number(energy=energy_grid_z))
+
+    # Get the spatial mesh along x axis
+    dkx = kev_to_wave_number(energy=energy_grid_x[1] - energy_grid_x[0])
+    x_range = np.pi * 2 / dkx
+
+    x_idx = np.linspace(start=-x_range / 2., stop=x_range / 2., num=number_x)
+    x_idx_tick = ["{:.2f}".format(x) for x in x_idx]
+
+    # Get the spatial mesh along y axis
+    dky = kev_to_wave_number(energy=energy_grid_y[1] - energy_grid_y[0])
+    y_range = np.pi * 2 / dky
+
+    y_idx = np.linspace(start=-y_range / 2., stop=y_range / 2., num=number_y)
+    y_idx_tick = ["{:.2f}".format(x) for x in y_idx]
+
+    # Get the spatial mesh along z axis
+    dkz = kev_to_wave_number(energy=energy_grid_z[1] - energy_grid_z[0])
+    z_range = np.pi * 2 / dkz
+
+    z_idx = np.linspace(start=-z_range / 2., stop=z_range / 2., num=number_z)
+    z_idx_tick = ["{:.2f}".format(x) for x in z_idx]
+
+    # Assemble the indexes and labels
+    axis_info = {"x_range": x_range,
+                 "x_idx": x_idx,
+                 "x_idx_tick": x_idx_tick,
+                 "dkx": dkx,
+                 "energy_grid_x": energy_grid_x,
+
+                 "y_range": y_range,
+                 "y_idx": y_idx,
+                 "y_idx_tick": y_idx_tick,
+                 "dky": dky,
+                 "energy_grid_y": energy_grid_y,
+
+                 "z_range": z_range,
+                 "z_idx": z_idx,
+                 "z_idx_tick": z_idx_tick,
+                 "dkz": dkz,
+                 "energy_grid_z": energy_grid_z,
+                 "z_time_idx": np.divide(z_idx, c),
+                 "z_time_tick": ["{:.2f}".format(x) for x in np.divide(z_idx, c)],
+
+                 "de_x_in_meV": np.linspace(start=- delta_e_x * 1e6,
+                                            stop=+ delta_e_x * 1e6,
+                                            num=number_x)}
+    return kx_grid, ky_grid, kz_grid, axis_info
+
+
+# ---------------------------------------------------
+#              For DuMond Diagram
+# ---------------------------------------------------
+def get_klen_and_angular_mesh(k_num, theta_num, phi_num, energy_range, theta_range, phi_range):
+    # Get the corresponding energy mesh
+    energy_grid = np.linspace(start=energy_range[0], stop=energy_range[1], num=k_num)
+    # Get the k grid
+    klen_grid = np.ascontiguousarray(kev_to_wave_number(energy=energy_grid))
+
+    # Get theta grid
+    theta_grid = np.linspace(start=theta_range[0], stop=theta_range[1], num=theta_num)
+
+    # Get phi grid
+    phi_grid = np.linspace(start=phi_range[0], stop=phi_range[1], num=phi_num)
+
+    info_dict = {"energy_grid": energy_grid,
+                 "klen_grid": klen_grid,
+                 "theta_grid": theta_grid,
+                 "phi_grid": phi_grid}
+    return info_dict
