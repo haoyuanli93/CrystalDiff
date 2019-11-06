@@ -49,9 +49,8 @@ def adjust_path_length(delay_time,
     # ----------------------------------------------------------
     # Step 3 : Tune the path sections of the variable branch
     # ----------------------------------------------------------
-    tmp = np.sum(fix_branch_path[:-2])
-    var_branch_path[-2] = tmp - np.sum(var_branch_path[:-3])
-    var_branch_path[-1] = fix_branch_path[-1]
+    path_diff = sum(var_branch_path) - sum(fix_branch_path)
+    var_branch_path[-1] -= path_diff
 
     # ----------------------------------------------------------
     # Step 3 : Adjust the path sections to match the delay time.
@@ -65,7 +64,7 @@ def adjust_path_length(delay_time,
                                        g_orders=[1, -1])  # By default, -1 corresponds to the fixed branch.
 
     delay_length = delay_time * util.c
-    cos_theta = np.dot(kout_var[1], kout_var[2]) / util.l2_norm(kout_var[1]) / util.l2_norm(kout_var[2])
+    cos_theta = np.dot(kout_var[2], kout_var[3]) / util.l2_norm(kout_var[3]) / util.l2_norm(kout_var[2])
     delta = delay_length / 2. / (1 - cos_theta)
 
     # Change the variable path sections with the calculated length change
@@ -76,6 +75,13 @@ def adjust_path_length(delay_time,
     # ----------------------------------------------------------
     # Step 4 : Get the corresponding intersection position
     # ----------------------------------------------------------
+    (intersect_fixed,
+     kout_fixed) = get_light_path_branch(kin_vec=kin,
+                                         grating_list=grating_pair,
+                                         path_list=fix_branch_path,
+                                         crystal_list=fix_branch_crystal,
+                                         g_orders=[-1, 1])
+
     (intersect_var,
      kout_var) = get_light_path_branch(kin_vec=kin,
                                        grating_list=grating_pair,
@@ -180,7 +186,7 @@ def get_light_path_branch(kin_vec, grating_list, path_list, crystal_list, g_orde
     kout_g1 = kin_vec + g_orders[0] * grating_list[0].base_wave_vector
 
     # Get the intersection point on the Bragg crystal
-    intersect_1 = path_list[0] * kout_g1[0] / util.l2_norm(kout_g1[0])
+    intersect_1 = path_list[0] * kout_g1 / util.l2_norm(kout_g1)
 
     # Get the intersection point on the rest of the crystals and the second grating.
     intersect_list, kout_vec_list = get_point_with_definite_path(kin_vec=kout_g1,
@@ -192,18 +198,21 @@ def get_light_path_branch(kin_vec, grating_list, path_list, crystal_list, g_orde
     kout_g2 = kout_vec_list[-1] + g_orders[1] * grating_list[1].base_wave_vector
 
     # Calculate the observation point
-    intersect_final = intersect_list[-1] + path_list[-1] * kout_g2[0] / util.l2_norm(kout_g2[0])
+    intersect_final = intersect_list[-1] + path_list[-1] * kout_g2 / util.l2_norm(kout_g2)
 
     # Get branch 1 info
-    intersect_branch = np.vstack((np.zeros(3, dtype=np.float64),
-                                  intersect_1,
-                                  intersect_list,
-                                  intersect_final))
+    num = len(path_list) + 1
 
-    kout_branch = np.vstack((kin_vec,
-                             kout_g1,
-                             kout_vec_list,
-                             kout_g2))
+    intersect_branch = np.zeros((num, 3), dtype=np.float64)
+    intersect_branch[1, :] = intersect_1[:]
+    intersect_branch[2:-1, :] = intersect_list[:, :]
+    intersect_branch[-1, :] = intersect_final[:]
+
+    kout_branch = np.zeros((num, 3), dtype=np.float64)
+    kout_branch[0, :] = kin_vec[:]
+    kout_branch[1, :] = kout_g1[:]
+    kout_branch[2:-1, :] = kout_vec_list[:, :]
+    kout_branch[-1, :] = kout_g2[:]
 
     return intersect_branch, kout_branch
 
@@ -247,7 +256,7 @@ def get_point_with_definite_path(kin_vec, path_sections, crystal_list, init_poin
         init = np.copy(intersect)
         kin = np.copy(kout)
 
-    return intersect_list[1:], kout_list
+    return intersect_list, kout_list
 
 
 def get_intersection_point(kin_vec, init_point, crystal_list):
