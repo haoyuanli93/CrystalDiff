@@ -198,17 +198,17 @@ def update_crystal_list(crystal_list,
 #########################################################################################
 #                       Jump between frames
 #########################################################################################
-def get_output_frame(displacement, obvservation, pulse, crystal_lists):
+def get_output_frame(displacement, observe, pulse, crystal_lists):
     # ------------------------------
     # Shift the position
     # ------------------------------
     pulse.x0 += displacement
     # Shift the observation position
-    obvservation += displacement
+    observe += displacement
 
     # Shift the grating
     for crystal_list in crystal_lists:
         for x in crystal_list:
             x.shift(displacement=displacement)
 
-    return pulse, obvservation, crystal_lists
+    return pulse, observe, crystal_lists

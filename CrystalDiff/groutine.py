@@ -683,6 +683,7 @@ def get_split_delay_single_branch_field(grating_pair, channel_cuts,
     ############################################################################################################
     # d_num = 512
     b_num = (number_z + d_num - 1) // d_num
+    bragg_num = len(channel_cuts)
 
     for x_idx in range(number_x):
         kx = kx_grid[x_idx]
@@ -725,7 +726,7 @@ def get_split_delay_single_branch_field(grating_pair, channel_cuts,
             # --------------------------------------------------------------------
             #  Step 3. Get k_in mesh and the jacobian
             # --------------------------------------------------------------------
-            for crystal_idx in [3, 2, 1, 0]:
+            for crystal_idx in list(range(bragg_num - 1, -1, -1)):
                 # Calculate the incident wave vector
                 gfun.get_kin_and_jacobian[b_num, d_num](cuda_kin_grid,
                                                         cuda_jacob,
@@ -808,7 +809,7 @@ def get_split_delay_single_branch_field(grating_pair, channel_cuts,
                                                                   number_z)
 
             # Diffracted by the delay lines
-            for crystal_idx in range(4):
+            for crystal_idx in range(bragg_num):
                 # Get the intersection point from the previous intersection point
                 gfun.get_intersection_point[b_num, d_num](cuda_remain_path,
                                                           cuda_intersect,
