@@ -50,7 +50,7 @@ def adjust_path_length(delay_time,
     # Step 3 : Tune the path sections of the variable branch
     # ----------------------------------------------------------
     path_diff = sum(var_branch_path) - sum(fix_branch_path)
-    var_branch_path[-1] -= path_diff
+    var_branch_path[-2] -= path_diff
 
     # ----------------------------------------------------------
     # Step 3 : Adjust the path sections to match the delay time.
@@ -139,9 +139,8 @@ def adjust_path_length_2cc_vs_2cc(delay_time,
     # ----------------------------------------------------------
     # Step 3 : Tune the path sections of the variable branch
     # ----------------------------------------------------------
-    tmp = np.sum(fix_branch_path[:5])
-    var_branch_path[-2] = tmp - np.sum(var_branch_path[:4])
-    var_branch_path[-1] = fix_branch_path[-1]
+    path_diff = np.sum(var_branch_path) - np.sum(fix_branch_path)
+    var_branch_path[-2] -= path_diff
 
     # ----------------------------------------------------------
     # Step 3 : Adjust the path sections to match the delay time.
@@ -155,7 +154,7 @@ def adjust_path_length_2cc_vs_2cc(delay_time,
                                        g_orders=[1, -1])  # By default, -1 corresponds to the fixed branch.
 
     delay_length = delay_time * util.c
-    cos_theta = np.dot(kout_var[1], kout_var[2]) / util.l2_norm(kout_var[1]) / util.l2_norm(kout_var[2])
+    cos_theta = np.dot(kout_var[2], kout_var[3]) / util.l2_norm(kout_var[2]) / util.l2_norm(kout_var[3])
     delta = delay_length / 2. / (1 - cos_theta)
 
     # Change the variable path sections with the calculated length change
@@ -257,4 +256,3 @@ def get_point_with_definite_path(kin_vec, path_sections, crystal_list, init_poin
         kin = np.copy(kout)
 
     return intersect_list, kout_list
-
