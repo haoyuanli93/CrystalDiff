@@ -5,8 +5,6 @@ fs, um are the units
 """
 
 import numpy as np
-import scipy.special as ss
-from scipy.spatial.transform import Rotation
 
 from CrystalDiff import util
 
@@ -115,90 +113,9 @@ class CrystalBlock3D:
         self.surface_point += displacement
 
     def rotate(self, rot_mat):
-        # change the position
-        self.surface_point = np.ascontiguousarray(rot_mat.dot(self.surface_point))
-
         # The shift of the space does not change the reciprocal lattice and the normal direction
         self.h = np.ascontiguousarray(rot_mat.dot(self.h))
         self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
-
-    def rotate_around_surface_point(self, rot_mat):
-        # The shift of the space does not change the reciprocal lattice and the normal direction
-        self.h = np.ascontiguousarray(rot_mat.dot(self.h))
-        self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
-
-
-class SinusoidalPhaseGrating:
-    def __init__(self):
-        self.period = 0.1239841973876029  # (um)
-        self.direction = np.array([0., 1., 0.], dtype=np.float64)
-        self.order = 1.
-        self.surface_point = np.array([0., 0., 3e7], dtype=np.float64)
-        self.normal = np.array([0., 0., 1.], dtype=np.float64)
-
-        # TODO: Set a more realistic way to calculate the phase contrast
-        self.phase_contrast = np.pi
-
-        # Derived parameter
-        self.coef = ss.jv(self.order, self.phase_contrast / 2.)  # The coefficient for this order
-        self.wave_vector = self.order * self.direction * np.pi * 2. / self.period
-
-        # Calculate the wave vector
-        self.update_wavevector_and_coef()
-
-    def update_wavevector_and_coef(self):
-        self.wave_vector = self.order * self.direction * np.pi * 2. / self.period
-        self.coef = ss.jv(self.order, self.phase_contrast / 2.)  # The coefficient for this order
-
-    def set_period(self, period):
-        self.period = period
-
-        # Update the wave vector
-        self.update_wavevector_and_coef()
-
-    def set_direction(self, direction):
-        self.direction = direction
-
-        # Update the wave vector
-        self.update_wavevector_and_coef()
-
-    def set_order(self, order):
-
-        if isinstance(order, int):
-            self.order = float(order)
-
-            # Update the wave vector
-            self.update_wavevector_and_coef()
-        elif isinstance(order, float):
-            print("The order of the diffraction has to be an integer.")
-            print("Therefore the approximated value {} is used instead of {}.".format(int(order), order))
-
-            self.order = float(int(order))
-
-            # Update the wave vector
-            self.update_wavevector_and_coef()
-        else:
-            raise Exception("The parameter order has to be an integer.")
-
-    def set_surface_point(self, surface_point):
-        self.surface_point = surface_point
-
-    def set_normal(self, normal):
-        self.normal = normal / util.l2_norm(normal)
-
-    def shift(self, displacement):
-        self.surface_point += displacement
-
-    def rotate(self, rot_mat):
-        # change the position
-        self.surface_point = np.ascontiguousarray(rot_mat.dot(self.surface_point))
-
-        # The shift of the space does not change the reciprocal lattice and the normal direction
-        self.direction = np.ascontiguousarray(rot_mat.dot(self.direction))
-        self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
-
-        # Change the direction of the momentum transfer accordingly
-        self.update_wavevector_and_coef()
 
 
 class RectangleGrating:
@@ -252,9 +169,6 @@ class RectangleGrating:
         self.surface_point += displacement
 
     def rotate(self, rot_mat):
-        # change the position
-        self.surface_point = np.ascontiguousarray(rot_mat.dot(self.surface_point))
-
         # The shift of the space does not change the reciprocal lattice and the normal direction
         self.direction = np.ascontiguousarray(rot_mat.dot(self.direction))
         self.normal = np.ascontiguousarray(rot_mat.dot(self.normal))
@@ -263,14 +177,24 @@ class RectangleGrating:
         self.__update_h()
         self.__update_period_wave_vector()
 
-    def rotate_around_surface_point(self, eular_angle):
-        # Get the rotation matrix
-        rot_mat = Rotation.from_euler('xyz', eular_angle, degrees=False)
 
-        # The shift of the space does not change the reciprocal lattice and the normal direction
-        self.direction = np.ascontiguousarray(rot_mat.as_dcm().dot(self.direction))
-        self.normal = np.ascontiguousarray(rot_mat.as_dcm().dot(self.normal))
+######################################################################################
+#                  functions
+######################################################################################
+def rotate_shift_crystal_list(crystal_list, rot_mat=None, displacement=None):
+    """
+    Rotate and shift the crystal list
 
-        # Update h and wave vector
-        self.__update_h()
-        self.__update_period_wave_vector()
+    :param crystal_list:
+    :param rot_mat:
+    :param displacement:
+    :return:
+    """
+
+    if rot_mat is not None:
+        for x in crystal_list:
+            x.rotate(rot_mat=rot_mat)
+
+    if displacement is not None:
+        for x in crystal_list:
+            x.shift(displacement=displacement)

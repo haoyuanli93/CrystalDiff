@@ -186,7 +186,7 @@ grating_list[1].set_surface_point(np.copy(intersect_brunch_1[-2]))
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 observation = np.copy(intersect_brunch_2[-1])
 
-total_path = pre_length + util.get_total_path_length(intersection_point_list=intersect_brunch_2)
+total_path = pre_length + util.get_total_path_length(intersect_list=intersect_brunch_2)
 print("The total propagation length is {:.2f}m.".format(total_path / 1e6))
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                  Change frame

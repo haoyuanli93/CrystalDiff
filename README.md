@@ -12,4 +12,10 @@ calculation time in some special situations.
 The ultimate requirement is that there is only 1 function for a specific
 operation and that there is only 1 way for a specific simulation. 
 In this way, if I need to make modifications to some functions, I do 
-not need to worry about the compatibility with the other functions. 
+not need to worry about the compatibility with the other functions.
+ 
+ 
+## ToDo list
+1. Change the implementation of the crystal classes and some util 
+    functions so that I can write a function to determine the output
+    momentum more easily.

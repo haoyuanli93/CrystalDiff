@@ -153,18 +153,18 @@ def get_intersection_point(s, k, n, x0):
 # --------------------------------------------------------------
 #          Geometric operation
 # --------------------------------------------------------------
-def get_total_path_length(intersection_point_list):
+def get_total_path_length(intersect_list):
     """
     Get the path length of a series of points
 
-    :param intersection_point_list:
+    :param intersect_list:
     :return:
     """
-    number = len(intersection_point_list)
+    number = len(intersect_list)
     total_path = 0.
     for l in range(number - 1):
-        total_path += l2_norm(intersection_point_list[l + 1] -
-                              intersection_point_list[l])
+        total_path += l2_norm(intersect_list[l + 1] -
+                              intersect_list[l])
 
     return total_path
 
@@ -328,3 +328,146 @@ def get_klen_and_angular_mesh(k_num, theta_num, phi_num, energy_range, theta_ran
                  "theta_grid": theta_grid,
                  "phi_grid": phi_grid}
     return info_dict
+
+
+###############################################################################################
+###############################################################################################
+#
+#    The following code handle bragg reflectivity with cpu in details
+#
+###############################################################################################
+###############################################################################################
+def get_bragg_reflection_array(kin_grid, d, h, n,
+                               chi0, chih_sigma, chihbar_sigma,
+                               chih_pi, chihbar_pi):
+    """
+    This function aims to get the info quickly with cpu.
+
+    :param kin_grid:
+    :param d:
+    :param h:
+    :param n:
+    :param chi0:
+    :param chih_sigma:
+    :param chihbar_sigma:
+    :param chih_pi:
+    :param chihbar_pi:
+    :return:
+    """
+    # Create holder to save the reflectivity and output momentum
+    kout_grid = np.zeros_like(kin_grid, dtype=np.float64)
+
+    # ------------------------------------------------------------
+    #          Step 1: Get output momentum wave vector
+    # ------------------------------------------------------------
+    # Get some info to facilitate the calculation
+    klen_grid = l2_norm_batch(kin_grid)
+    dot_hn = np.dot(h, n)
+    h_square = l2_square(h)
+
+    # Get gamma and alpha and b
+    dot_kn = np.dot(kin_grid, n)
+    dot_kh = np.dot(kin_grid, h)
+
+    gamma_0 = np.divide(dot_kn, klen_grid)
+    gamma_h = np.divide(dot_kn + dot_hn, klen_grid)
+
+    b = np.divide(gamma_0, gamma_h)
+    b_cplx = b.astype(np.complex128)
+    alpha = np.divide(2 * dot_kh + h_square, np.square(klen_grid))
+
+    # Get momentum tranfer
+    sqrt_gamma_alpha = np.sqrt(gamma_h ** 2 - alpha)
+    m_trans = np.multiply(klen_grid, -gamma_h - sqrt_gamma_alpha)
+
+    # Update the kout_grid
+    kout_grid[:, 0] = kin_grid[:, 0] + h[0] + m_trans * n[0]
+    kout_grid[:, 1] = kin_grid[:, 1] + h[1] + m_trans * n[1]
+    kout_grid[:, 2] = kin_grid[:, 2] + h[2] + m_trans * n[2]
+
+    # ------------------------------------------------------------
+    # Step 2: Get the reflectivity for input sigma polarization
+    # ------------------------------------------------------------
+    # Get alpha tidle
+    alpha_tidle = (alpha * b + chi0 * (1. - b)) / 2.
+
+    # Get sqrt(alpha**2 + beta**2) value
+    sqrt_a2_b2 = np.sqrt(alpha_tidle ** 2 + np.multiply(b_cplx, chih_sigma * chihbar_sigma))
+
+    # Change the imaginary part sign
+    mask = np.zeros_like(sqrt_a2_b2, dtype=np.bool)
+    mask[sqrt_a2_b2.imag < 0] = True
+    sqrt_a2_b2[mask] = - sqrt_a2_b2[mask]
+
+    # Calculate the phase term
+    re = klen_grid * d / gamma_0 * sqrt_a2_b2.real
+    im = klen_grid * d / gamma_0 * sqrt_a2_b2.imag
+
+    magnitude = np.exp(-im).astype(np.complex128)
+    phase = np.cos(re) + np.sin(re) * 1.j
+
+    # Calculate some intermediate part
+    numerator = 1. - magnitude * phase
+    denominator = alpha_tidle * numerator + sqrt_a2_b2 * (2. - numerator)
+
+    # Take care of the exponential
+    mask = np.zeros_like(im, dtype=np.bool)
+    mask[im <= 200] = True
+
+    reflect_s = chih_sigma * b_cplx / denominator
+    reflect_s[mask] = chih_sigma * b_cplx[mask] * numerator[mask] / denominator[mask]
+
+    # ------------------------------------------------------------
+    # Step 2: Get the reflectivity for pi polarization
+    # ------------------------------------------------------------
+
+    # Get the polarization factor with the asymmetric factor b.
+    p_value = np.sum(np.multiply(kout_grid, kin_grid), axis=-1) / np.square(klen_grid)
+    bp = b_cplx * p_value
+
+    # Get sqrt(alpha**2 + beta**2) value
+    sqrt_a2_b2 = np.sqrt(alpha_tidle ** 2 + bp * p_value * chih_pi * chihbar_pi)
+
+    # Change the imaginary part sign
+    mask = np.zeros_like(sqrt_a2_b2, dtype=np.bool)
+    mask[sqrt_a2_b2.imag < 0] = True
+    sqrt_a2_b2[mask] = - sqrt_a2_b2[mask]
+
+    # Calculate the phase term
+    re = klen_grid * d / gamma_0 * sqrt_a2_b2.real
+    im = klen_grid * d / gamma_0 * sqrt_a2_b2.imag
+
+    magnitude = np.exp(-im).astype(np.complex128)
+    phase = np.cos(re) + np.sin(re) * 1.j
+
+    # Calculate some intermediate part
+    numerator = 1. - magnitude * phase
+    denominator = alpha_tidle * numerator + sqrt_a2_b2 * (2. - numerator)
+
+    # Take care of the exponential
+    mask = np.zeros_like(im, dtype=np.bool)
+    mask[im <= 200] = True
+
+    reflect_p = bp * chih_pi / denominator
+    reflect_p[mask] = bp[mask] * chih_pi * numerator[mask] / denominator[mask]
+
+    return reflect_s, reflect_p, b, kout_grid
+
+
+def get_rocking_curve(kin_list, crystal_list):
+
+    # Get
+
+    # First reflection
+    (reflect_s_1,
+     reflect_p_1,
+     b_1,
+     kout_grid_1) = get_bragg_reflection_array(kin_grid=kin_grid,
+                                                    d=crystal_list_1[0].d,
+                                                    h=crystal_list_1[0].h,
+                                                    n=crystal_list_1[0].normal,
+                                                    chi0=crystal_list_1[0].chi0,
+                                                    chih_sigma=crystal_list_1[0].chih_sigma,
+                                                    chihbar_sigma=crystal_list_1[0].chihbar_sigma,
+                                                    chih_pi=crystal_list_1[0].chih_pi,
+                                                    chihbar_pi=crystal_list_1[0].chihbar_pi)
