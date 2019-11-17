@@ -455,19 +455,45 @@ def get_bragg_reflection_array(kin_grid, d, h, n,
 
 
 def get_rocking_curve(kin_list, crystal_list):
+    k_num = kin_list.shape[0]
+    x_num = len(crystal_list)
 
-    # Get
+    # Define some holder to save data
+    kout_list = []
+    reflect_p_list = []
+    reflect_s_list = []
+    reflect_p_total = np.ones(k_num, dtype=np.complex128)
+    reflect_s_total = np.ones(k_num, dtype=np.complex128)
+    b_total = np.ones(k_num, dtype=np.float64)
 
-    # First reflection
-    (reflect_s_1,
-     reflect_p_1,
-     b_1,
-     kout_grid_1) = get_bragg_reflection_array(kin_grid=kin_grid,
-                                                    d=crystal_list_1[0].d,
-                                                    h=crystal_list_1[0].h,
-                                                    n=crystal_list_1[0].normal,
-                                                    chi0=crystal_list_1[0].chi0,
-                                                    chih_sigma=crystal_list_1[0].chih_sigma,
-                                                    chihbar_sigma=crystal_list_1[0].chihbar_sigma,
-                                                    chih_pi=crystal_list_1[0].chih_pi,
-                                                    chihbar_pi=crystal_list_1[0].chihbar_pi)
+    kout_tmp = np.copy(kin_list)
+    for x in range(x_num):
+        # Get info
+        (reflect_s_tmp,
+         reflect_p_tmp,
+         b_tmp,
+         kout_tmp) = get_bragg_reflection_array(kin_grid=kout_tmp,
+                                                d=crystal_list[x].d,
+                                                h=crystal_list[x].h,
+                                                n=crystal_list[x].normal,
+                                                chi0=crystal_list[x].chi0,
+                                                chih_sigma=crystal_list[x].chih_sigma,
+                                                chihbar_sigma=crystal_list[x].chihbar_sigma,
+                                                chih_pi=crystal_list[x].chih_pi,
+                                                chihbar_pi=crystal_list[x].chihbar_pi)
+        b_tmp = np.abs(b_tmp)
+
+        # Save info to holders
+        kout_list.append(np.copy(kout_tmp))
+        reflect_p_list.append(np.square(np.abs(reflect_p_tmp)) / b_tmp)
+        reflect_s_list.append(np.square(np.abs(reflect_s_tmp)) / b_tmp)
+
+        # Update the total reflectivity
+        reflect_s_total = np.multiply(reflect_s_total, reflect_s_tmp)
+        reflect_p_total = np.multiply(reflect_p_total, reflect_p_tmp)
+        b_total = np.multiply(b_total, b_tmp)
+
+    reflect_s_total = np.square(np.abs(reflect_s_total)) / b_total
+    reflect_p_total = np.square(np.abs(reflect_p_total)) / b_total
+
+    return reflect_s_total, reflect_p_total, reflect_s_list, reflect_p_list, kout_list
