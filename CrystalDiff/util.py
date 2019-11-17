@@ -127,7 +127,7 @@ def get_bragg_kout(kin, h, normal, compare_length=False):
 # --------------------------------------------------------------
 #          Geometry functions
 # --------------------------------------------------------------
-def get_intersection_point(s, k, n, x0):
+def get_intersection(s, k, n, x0):
     """
     Assume that a line starts from point s along the direction k. It will intersect with
     the plane that passes through point x0 and has normal direction n. The function find the

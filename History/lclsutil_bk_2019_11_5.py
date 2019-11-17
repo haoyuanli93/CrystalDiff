@@ -579,10 +579,10 @@ def get_intersection_point(kin_vec, init_point, crystal_list):
     # Loop through all the reflections
     for idx in range(reflect_num):
         # Get the intersection point
-        intersect_tmp = util.get_intersection_point(s=s,
-                                                    k=k,
-                                                    n=crystal_list[idx].normal,
-                                                    x0=crystal_list[idx].surface_point)
+        intersect_tmp = util.get_intersection(s=s,
+                                              k=k,
+                                              n=crystal_list[idx].normal,
+                                              x0=crystal_list[idx].surface_point)
         intersect_array[idx] = intersect_tmp[0]
 
         # Get the output momentum

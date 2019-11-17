@@ -15,6 +15,9 @@ pi = util.pi
 
 class CrystalBlock3D:
     def __init__(self):
+        # Add a type to help functions to choose how to treat this object
+        self.type = "Crystal: Bragg Reflection"
+
         #############################
         # First level of parameters
         ##############################
@@ -120,6 +123,8 @@ class CrystalBlock3D:
 
 class RectangleGrating:
     def __init__(self):
+        self.type = "Transmissive Grating"
+
         # Structure info
         self.a = 1.  # (um)
         self.b = 1.  # (um)
@@ -198,3 +203,15 @@ def rotate_shift_crystal_list(crystal_list, rot_mat=None, displacement=None):
     if displacement is not None:
         for x in crystal_list:
             x.shift(displacement=displacement)
+
+
+def get_output_wavevector(kin, crystal, grating_order=None):
+    if crystal.type is "Crystal: Bragg Reflection":
+        kout = util.get_bragg_kout(kin=kin,
+                                   h=crystal.h,
+                                   normal=crystal.normal,
+                                   compare_length=False)
+        return kout
+    if crystal.type is "Transmissive Grating":
+        kout = kin + grating_order * crystal.base_wave_vector
+        return kout

@@ -211,70 +211,109 @@ def get_point_with_definite_path(kin_vec, path_sections, crystal_list, init_poin
 ##########################################################################
 #       Find the trajectory when the crystals are fixed
 ##########################################################################
-def get_light_trajectory_with_total_path(kin_vec,
-                                         init_point,
-                                         total_path,
-                                         crystal_list,
-                                         g_orders):
+def get_light_path_with_crystals(kin_vec,
+                                 init_point,
+                                 total_path,
+                                 grating_list,
+                                 crystal_list,
+                                 g_orders):
     """
     Get the light path for one of the branch.
 
     :param kin_vec: The incident wave vector with a shape of (3,)
+    :param grating_list:
     :param init_point:
     :param total_path:
     :param crystal_list:
     :param g_orders: The diffraction orders of the gratings
     :return:
     """
-    # Create holder for the calculation
-    num = len(crystal_list) + 1
-    intersect_array = np.zeros((num, 3), dtype=np.float64)
-    kout_array = np.zeros((num, 3), dtype=np.float64)
+    # TODO: I did not treat the case where the total path length is not long enough for the system
+    #       I'll try to handle that case later.
 
-    intersect_array[0, :] = np.copy(init_point)
-    kout_array[0, :] = np.copy(kin_vec)
-
-    # Create auxiliary variables for the calculation
-    g_idx = 0  # The index for grating
     remain_path = np.copy(total_path)
 
-    # Loop through all the crystals to get the path
-    for idx in range(1, num):
-        crystal_obj = crystal_list[idx - 1]
-        # Get the output wave vector
-        if crystal_obj.type == "Crystal: Bragg Reflection":
-            kout_array[idx, :] = util.get_bragg_kout(kin=kout_array[idx - 1],
-                                                     h=crystal_obj.h,
-                                                     normal=crystal_obj.normal,
-                                                     compare_length=False)
-        if crystal_obj.type == "Transmissive Grating":
-            kout_array[idx, :] = (kout_array[idx - 1] +
-                                  g_orders[g_idx] * crystal_obj.base_wave_vector)
-            # Update the index of the grating
-            g_idx += 1
+    # Get kout from the first grating
+    kout_g1 = kin_vec + g_orders[0] * grating_list[0].base_wave_vector
 
-        # The last intersection point need to be calculated individually
-        if idx == num - 1:
-            break
+    # Get the intersection point on the Bragg crystal
+    intersect_list, kout_list = get_trajectory_with_crystals(kin_vec=kout_g1,
+                                                             init_point=init_point,
+                                                             crystal_list=crystal_list)
 
-        # Get the new intersection point
-        intersect_array[idx] = util.get_intersection(s=intersect_array[idx - 1],
-                                                     k=kout_array[idx],
+    # Get the update the remaining path length
+    remain_path -= util.get_total_path_length(intersect_list=intersect_list)
+
+    # Consider the seperation between the initial point and the first point of the intersect_list
+    remain_path -= util.l2_norm(init_point - intersect_list[0])
+
+    # Calculate the intersection point on the last grating
+    intersect_g2 = util.get_intersection(s=intersect_list[-1],
+                                         k=kout_list[-1],
+                                         n=grating_list[-1].normal,
+                                         x0=grating_list[-1].surface_point)
+
+    # Get the final output momentum
+    kout_g2 = kout_list[-1] + g_orders[1] * grating_list[1].base_wave_vector
+
+    # Update the remaining path length
+    remain_path -= util.l2_norm(intersect_g2 - intersect_list[-1])
+
+    # Calculate the observation point
+    intersect_final = intersect_g2 + remain_path * kout_g2 / util.l2_norm(kout_g2)
+
+    # Get branch 1 info
+    num = intersect_list.shape[0] + 3
+
+    intersect_branch = np.zeros((num, 3), dtype=np.float64)
+    intersect_branch[0, :] = init_point[:]
+    intersect_branch[1:-2, :] = intersect_list[:, :]
+    intersect_branch[-2, :] = intersect_g2[:]
+    intersect_branch[-1, :] = intersect_final[:]
+
+    kout_branch = np.zeros((num, 3), dtype=np.float64)
+    kout_branch[0, :] = kin_vec[:]
+    kout_branch[1, :] = kout_g1[:]
+    kout_branch[2:-1, :] = kout_list[:, :]
+    kout_branch[-1, :] = kout_g2[:]
+
+    return intersect_branch, kout_branch
+
+
+def get_trajectory_with_crystals(kin_vec, init_point, crystal_list):
+    """
+    Calculate the intersection points given the initial point and the crystals.
+
+    :param kin_vec:
+    :param init_point:
+    :param crystal_list:
+    :return:
+    """
+    # Get the reflection number
+    reflect_num = len(crystal_list)
+
+    # Create holders
+    kout_array = np.zeros((reflect_num, 3), dtype=np.float64)
+    intersect_array = np.zeros((reflect_num, 3), dtype=np.float64)
+
+    # Copy the variables to avoid potential modification
+    s = np.copy(init_point)
+    k = np.copy(kin_vec)
+
+    # Loop through all the reflections
+    for idx in range(reflect_num):
+        # Get the intersection point
+        intersect_array[idx] = util.get_intersection(s=s,
+                                                     k=k,
                                                      n=crystal_list[idx].normal,
                                                      x0=crystal_list[idx].surface_point)
-        # Get the remaining path
-        path_tmp = util.l2_norm(intersect_array[idx] - intersect_array[idx - 1])
 
-        # If the path length is not long enough to cover the whole device, then stop early.
-        if path_tmp > remain_path:
-            intersect_array[idx] = (intersect_array[idx - 1] +
-                                    kout_array[idx] * remain_path / util.l2_norm(kout_array[idx]))
-            return intersect_array, kout_array
-        else:
-            remain_path -= path_tmp
+        # Update the k and s and kout holder
+        kout_array[idx] = util.get_bragg_kout(kin=k,
+                                              h=crystal_list[idx].h,
+                                              normal=crystal_list[idx].normal)
 
-    # If the path length is long though to cover the whole path, then calculate the final point
-    intersect_array[-1] = (intersect_array[-2] +
-                           kout_array[-1] * remain_path / util.l2_norm(kout_array[-1]))
+        k = np.copy(kout_array[idx])
+        s = np.copy(intersect_array[idx])
 
     return intersect_array, kout_array
