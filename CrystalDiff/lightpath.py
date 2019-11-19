@@ -280,7 +280,6 @@ def get_light_trajectory_with_total_path(kin_vec,
     return intersect_array, kout_array
 
 
-
 ##########################################################################
 #       Create Delay time
 ##########################################################################

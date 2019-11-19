@@ -212,3 +212,47 @@ def get_output_frame(displacement, observe, pulse, crystal_lists):
             x.shift(displacement=displacement)
 
     return pulse, observe, crystal_lists
+
+
+def get_intermediate_frame(displacement, rotation, observe, pulse, crystal_lists):
+    """
+    Shift the crystals and the rotate the frame to calculate the intermediate field
+    
+    :param displacement: 
+    :param rotation: 
+    :param observe: 
+    :param pulse: 
+    :param crystal_lists: 
+    :return: 
+    """
+    # ------------------------------
+    # Shift the position
+    # ------------------------------
+    pulse.x0 += displacement
+    # Shift the observation position
+    observe += displacement
+
+    # Shift the grating
+    for crystal_list in crystal_lists:
+        for x in crystal_list:
+            x.shift(displacement=displacement)
+
+    # ------------------------------
+    # Rotate the crystals, observation and pulse origin
+    # ------------------------------
+    pulse.x0 = np.dot(rotation, pulse.x0)
+    pulse.x0 = np.dot(rotation, pulse.x0)
+
+    pulse.sigma_mat = np.dot(np.dot(rotation, pulse.sigma_mat), rotation.T)
+
+    pulse.k0 = np.dot(rotation, pulse.k0)
+
+    # Shift the observation position
+    observe = np.dot(rotation, observe)
+
+    # Shift the grating
+    for crystal_list in crystal_lists:
+        for x in crystal_list:
+            x.rotate(rot_mat=rotation)
+
+    return pulse, observe, crystal_lists

@@ -16,4 +16,5 @@ not need to worry about the compatibility with the other functions.
  
  
 ## ToDo list
-1. 
+1. Change the name of util.get_rocking_curve
+2.

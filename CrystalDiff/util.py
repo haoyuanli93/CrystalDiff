@@ -455,6 +455,13 @@ def get_bragg_reflection_array(kin_grid, d, h, n,
 
 
 def get_rocking_curve(kin_list, crystal_list):
+    """
+    Get the reflectivity for each kin.
+
+    :param kin_list:
+    :param crystal_list:
+    :return:
+    """
     k_num = kin_list.shape[0]
     x_num = len(crystal_list)
 
