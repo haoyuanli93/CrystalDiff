@@ -497,3 +497,50 @@ def get_rocking_curve(kin_list, crystal_list):
     reflect_p_total = np.square(np.abs(reflect_p_total)) / b_total
 
     return reflect_s_total, reflect_p_total, reflect_s_list, reflect_p_list, kout_list
+
+
+###############################################################################################
+###############################################################################################
+#
+#    The following code handle grating transmission with cpu
+#
+###############################################################################################
+###############################################################################################
+def get_square_grating_transmission(k, m, n, h, a, b):
+    """
+    k: Wave number of the photon = 2 * pi * c / lambda
+    m: The order of diffraction
+    n: The complex refraction index.
+    h: The height of the tooth.
+    a: The width of the groove.
+    b: The width of the tooth.
+    """
+
+    if not isinstance(m, int):
+        raise Exception("m is the order of diffraction. This value has to be an integer.")
+    if not isinstance(n, complex):
+        raise Exception("n is the complex refraction index. This value has to be a complex number.")
+
+    # First consider diffractions that are not the zeroth order.
+    if m != 0:
+        # Get the real part and the imaginary part of the refraction coefficient
+        n_re = n.real - 1
+        n_im = n.imag
+
+        term_1 = 1 - np.exp(-k * h * n_im) * (np.cos(k * h * n_re) + 1.j * np.sin(k * h * n_re))
+        term_2 = 1 - np.cos(2 * np.pi * b * m / (a + b)) + np.sin(2 * np.pi * b * m / (a + b))
+
+        transmission = np.square(np.abs(term_1 * term_2)) / (4 * (np.pi * m) ** 2)
+
+    # Then consider the zeroth order
+    else:
+        # Get the real part and the imaginary part of the refraction coefficicent
+        n_re = n.real - 1
+        n_im = n.imag
+
+        term_1 = (b + a * np.exp(-k * h * n_im) * (np.cos(k * h * n_re) +
+                                                   1.j * np.sin(k * h * n_re))) / (a + b)
+
+        transmission = np.square(np.abs(term_1))
+
+    return transmission
