@@ -335,14 +335,12 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
 
         # Get momentum tranfer
         sqrt_gamma_alpha = math.sqrt(gamma_h ** 2 - alpha)
-        m_trans = klen * (-gamma_h - sqrt_gamma_alpha)
-
-        # tmp_pos = abs(-gamma_h + sqrt_gamma_alpha)
-        # tmp_neg = abs(-gamma_h - sqrt_gamma_alpha)
-        # if tmp_pos > tmp_neg:
-        #    m_trans = klen * (-gamma_h - sqrt_gamma_alpha)
-        # else:
-        #    m_trans = klen * (-gamma_h + sqrt_gamma_alpha)
+        tmp_pos = abs(-gamma_h + sqrt_gamma_alpha)
+        tmp_neg = abs(-gamma_h - sqrt_gamma_alpha)
+        if tmp_pos > tmp_neg:
+            m_trans = klen * (-gamma_h - sqrt_gamma_alpha)
+        else:
+            m_trans = klen * (-gamma_h + sqrt_gamma_alpha)
 
         # Get output wave vector
         kout_x = kin_x + h[0] + m_trans * n[0]
@@ -413,24 +411,24 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
         im = klen * d / gamma_0 * sqrt_a2_b2.imag
 
         # Take care of the exponential
-        # if im <= 200.:
-        magnitude = complex(math.exp(-im))
+        if im <= 200.:
+            magnitude = complex(math.exp(-im))
 
-        phase = complex(math.cos(re), math.sin(re))
-        # Calculate some intermediate part
-        numerator = 1. - magnitude * phase
-        denominator = alpha_tidle * numerator + sqrt_a2_b2 * (2. - numerator)
+            phase = complex(math.cos(re), math.sin(re))
+            # Calculate some intermediate part
+            numerator = 1. - magnitude * phase
+            denominator = alpha_tidle * numerator + sqrt_a2_b2 * (2. - numerator)
 
-        # Assemble everything
-        reflectivity_sigma[idx] = b_complex * chih_sigma * numerator / denominator
+            # Assemble everything
+            reflectivity_sigma[idx] = b_complex * chih_sigma * numerator / denominator
 
-        # else:
-        #    # When the crystal is super thick, the numerator becomes 1 The exponential term becomes 0.
-        #    # Calculate some intermediate part
-        #    denominator = alpha_tidle + sqrt_a2_b2
-        #
-        #    # Assemble everything
-        #    reflectivity_sigma[idx] = b_complex * chih_sigma / denominator
+        else:
+            # When the crystal is super thick, the numerator becomes 1 The exponential term becomes 0.
+            # Calculate some intermediate part
+            denominator = alpha_tidle + sqrt_a2_b2
+
+            # Assemble everything
+            reflectivity_sigma[idx] = b_complex * chih_sigma / denominator
 
         # Get the output electric field due to this component
         efield_out_sigma_x = reflectivity_sigma[idx] * efield_sigma * complex(sigma_in_x)
@@ -454,7 +452,7 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
         sqrt_a2_b2 = cmath.sqrt(alpha_tidle ** 2 + bp * p_value * chih_pi * chihbar_pi)
 
         # Because this is a thick crystal, only one mode will be activated.
-        if sqrt_a2_b2.imag < 0.:
+        if sqrt_a2_b2.imag < 0:
             # Because only one mode is activated,
             sqrt_a2_b2 = - sqrt_a2_b2
 
@@ -463,13 +461,13 @@ def get_bragg_reflection(reflectivity_sigma, reflectivity_pi, kout_grid, efield_
         im = klen * d / gamma_0 * sqrt_a2_b2.imag
 
         # Take care of the exponential
-        if im <= 300.:
+        if im <= 100.:
             magnitude = complex(math.exp(-im))
             phase = complex(math.cos(re), math.sin(re))
 
             # Calculate some intermediate part
-            numerator = complex(1.) - magnitude * phase
-            denominator = alpha_tidle * numerator + sqrt_a2_b2 * (complex(2.) - numerator)
+            numerator = 1. - magnitude * phase
+            denominator = alpha_tidle * numerator + sqrt_a2_b2 * (2. - numerator)
             # Assemble everything
             reflectivity_pi[idx] = bp * chih_pi * numerator / denominator
 
@@ -605,7 +603,7 @@ def get_intersection_point(path_length_remain,
         intersect_point[idx, 2] = source_point[idx, 2] + coef_k * kvec_grid[idx, 2]
 
         # Get the distance change
-        distance = coef_k * klen_gird[idx]
+        distance = math.fabs(coef_k * klen_gird[idx])
         path_length_remain[idx] = path_length[idx] - distance
 
 

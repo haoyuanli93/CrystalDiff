@@ -1458,7 +1458,12 @@ def get_diffraction_field(crystal_list,
                           ky_grid,
                           kz_grid,
                           number_x, number_y, number_z,
-                          z_idx_range, num1, num2, d_num=512):
+                          z_idx_range,
+                          idx_start_1,
+                          idx_start_2,
+                          num1,
+                          num2,
+                          d_num=512):
     """
 
     :param crystal_list:
@@ -1475,16 +1480,14 @@ def get_diffraction_field(crystal_list,
     :param number_y:
     :param number_z:
     :param z_idx_range:
+    :param idx_start_1:
+    :param idx_start_2:
     :param num1:
     :param num2:
     :param d_num:
     :return:
     """
     crystal_num = len(crystal_list)
-
-    # Get the inital points for the fft data collection
-    idx_start_1 = number_z - num1
-    idx_start_2 = 0
 
     tic = time.time()
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

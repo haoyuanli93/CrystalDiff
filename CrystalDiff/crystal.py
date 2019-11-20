@@ -74,13 +74,13 @@ class CrystalBlock3D:
         self.normal = normal
         self._update_dot_nh()
 
-    def set_surface_position(self, position):
+    def set_surface_point(self, surface_point):
         """
 
-        :param position:
+        :param surface_point:
         :return:
         """
-        self.surface_point = position
+        self.surface_point = surface_point
 
     def set_thickness(self, d):
         """

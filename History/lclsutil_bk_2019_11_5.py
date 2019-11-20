@@ -461,7 +461,7 @@ def get_crystal_list_delay_branch(hlen_vals,
         my_crystal.set_surface_normal(rot_mat.as_dcm().dot(normal_holder))
 
         # Set the surface point
-        my_crystal.set_surface_position(surface_points[idx])
+        my_crystal.set_surface_point(surface_points[idx])
 
         # ----------------------------------------------
         # Set chi values
@@ -511,7 +511,7 @@ def get_crystal_list(num, hlen_vals, theta_vals, rho_vals, tau_vals, surface_poi
                            np.cos(tau_vals[idx]) * np.sin(rho_vals[idx]),
                            np.cos(tau_vals[idx]) * np.cos(rho_vals[idx])])
         my_crystal.set_surface_normal(normal)
-        my_crystal.set_surface_position(surface_points[idx])
+        my_crystal.set_surface_point(surface_points[idx])
 
         # ----------------------------------------------
         # Set chi values

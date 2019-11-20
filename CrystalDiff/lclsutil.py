@@ -102,7 +102,7 @@ def get_crystal_list(num,
 
         # Update the surface points
         if surface_points is not None:
-            my_crystal.set_surface_position(surface_points[idx])
+            my_crystal.set_surface_point(surface_points[idx])
 
         # ----------------------------------------------
         # Set chi values
@@ -176,7 +176,7 @@ def update_crystal_list(crystal_list,
 
         # Update the surface points
         if surface_points is not None:
-            my_crystal.set_surface_position(surface_points[idx])
+            my_crystal.set_surface_point(surface_points[idx])
 
         # ----------------------------------------------
         # Set chi values
@@ -241,11 +241,10 @@ def get_intermediate_frame(displacement, rotation, observe, pulse, crystal_lists
     # Rotate the crystals, observation and pulse origin
     # ------------------------------
     pulse.x0 = np.dot(rotation, pulse.x0)
-    pulse.x0 = np.dot(rotation, pulse.x0)
+    pulse.k0 = np.dot(rotation, pulse.k0)
+    pulse.polar = np.dot(rotation, pulse.polar)
 
     pulse.sigma_mat = np.dot(np.dot(rotation, pulse.sigma_mat), rotation.T)
-
-    pulse.k0 = np.dot(rotation, pulse.k0)
 
     # Shift the observation position
     observe = np.dot(rotation, observe)
@@ -254,5 +253,6 @@ def get_intermediate_frame(displacement, rotation, observe, pulse, crystal_lists
     for crystal_list in crystal_lists:
         for x in crystal_list:
             x.rotate(rot_mat=rotation)
+            x.set_surface_point(surface_point=rotation.dot(x.surface_point))
 
     return pulse, observe, crystal_lists
