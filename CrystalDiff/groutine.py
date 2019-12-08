@@ -1020,7 +1020,8 @@ def get_split_delay_single_branch_field(grating_pair, channel_cuts,
                   "reflectivity_pi": reflect_pi,
                   "reflectivity_sigma": reflect_sigma,
                   "reflectivity_pi_tot": reflect_total_pi,
-                  "reflectivity_sigma_tot": reflect_total_sigma
+                  "reflectivity_sigma_tot": reflect_total_sigma,
+                  "k_grid": kin_grid
                   }
 
     result_3d_dict = {"efield_3d": efield_3d,
