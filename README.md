@@ -19,3 +19,5 @@ not need to worry about the compatibility with the other functions.
 1. Change the name of util.get_rocking_curve
 2. There are two kinds of rotations in this package. I think the current
     handling is not ideal.
+3. Implement the Laue reflection functions to test my idea of the LLL 
+    interferometer
