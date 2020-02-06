@@ -513,7 +513,7 @@ def get_rocking_curve(kin_list, crystal_list):
 #
 ###############################################################################################
 ###############################################################################################
-def get_square_grating_transmission(k, m, n, h, a, b):
+def get_square_grating_transmission(k, m, n, h, a, b, base=0.):
     """
     k: Wave number of the photon = 2 * pi * c / lambda
     m: The order of diffraction
@@ -538,8 +538,9 @@ def get_square_grating_transmission(k, m, n, h, a, b):
         term_2 = 1 - np.cos(2 * np.pi * b * m / (a + b)) + np.sin(2 * np.pi * b * m / (a + b))
 
         transmission = np.square(np.abs(term_1 * term_2)) / (4 * (np.pi * m) ** 2)
+        transmission *= np.exp(- 2 * k * base * n_im)
 
-    # Then consider the zeroth order
+        # Then consider the zeroth order
     else:
         # Get the real part and the imaginary part of the refraction coefficicent
         n_re = n.real - 1
@@ -549,5 +550,6 @@ def get_square_grating_transmission(k, m, n, h, a, b):
                                                    1.j * np.sin(k * h * n_re))) / (a + b)
 
         transmission = np.square(np.abs(term_1))
+        transmission *= np.exp(- 2 * k * base * n_im)
 
     return transmission

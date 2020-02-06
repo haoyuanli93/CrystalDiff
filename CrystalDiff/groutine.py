@@ -1709,6 +1709,7 @@ def get_diffraction_field(crystal_list,
                                                                           my_crystal.h,
                                                                           my_crystal.n,
                                                                           my_crystal.ab_ratio,
+                                                                          my_crystal.thick_vec,
                                                                           grating_orders[grating_idx],
                                                                           my_crystal.base_wave_vector,
                                                                           number_z)

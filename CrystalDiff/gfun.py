@@ -881,12 +881,17 @@ def get_square_pulse_spectrum_smooth(coef,
           '(float64[:,:], complex128[:,:],'
           'float64[:],'
           'float64[:,:],'
-          'float64[:], complex128, float64, float64, float64[:],'
+          'float64[:], complex128, float64, float64[:], float64, float64[:],'
           'int64)')
 def get_square_grating_effect_non_zero(kout_grid, efield_grid,
                                        klen_grid,
                                        kin_grid,
-                                       grating_h, grating_n, grating_ab_ratio, order, grating_k,
+                                       grating_h,
+                                       grating_n,
+                                       grating_ab_ratio,
+                                       grating_base,
+                                       order,
+                                       grating_k,
                                        num):
     """
     This function add the grating effect to the pulse. Including the phase change and the momentum change.
@@ -900,6 +905,7 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
     :param grating_h: The height vector of the grating
     :param grating_n: The refraction index of the grating.
     :param grating_ab_ratio: The b / (a + b) where a is the width of the groove while b the width of the tooth
+    :param grating_base: The thickness of the base of the grating
     :param order: The order of diffraction to investigate.
                     Notice that this variable has to be an integer mathematically.
                     However, in numerical calculation, this is used as a float.
@@ -917,13 +923,23 @@ def get_square_grating_effect_non_zero(kout_grid, efield_grid,
                       grating_h[1] * kin_grid[row, 1] +
                       grating_h[2] * kin_grid[row, 2]) * (grating_n - complex(1.))
 
+        # The argument for exp(ik(n-1)t) for the phase different and absorption from
+        # the base of the grating
+        thick_k_n = complex(grating_base[0] * kin_grid[row, 0] +
+                            grating_base[1] * kin_grid[row, 1] +
+                            grating_base[2] * kin_grid[row, 2]) * (grating_n - complex(1.))
+
         first_factor = complex(1.
                                - math.cos(two_pi * order * grating_ab_ratio),
                                - math.sin(two_pi * order * grating_ab_ratio))
         second_factor = complex(1.) - complex(math.exp(-nhk.imag) * math.cos(nhk.real),
                                               math.exp(-nhk.imag) * math.sin(nhk.real))
 
-        factor = 1.j / complex(2. * math.pi * order) * first_factor * second_factor
+        # Factor from the base
+        factor_base = complex(math.cos(thick_k_n.real) * math.exp(-thick_k_n.imag),
+                              math.sin(thick_k_n.real) * math.exp(-thick_k_n.imag))
+
+        factor = 1.j / complex(2. * math.pi * order) * first_factor * second_factor * factor_base
 
         # Step 2: Update the coefficient
         efield_grid[row, 0] = factor * efield_grid[row, 0]

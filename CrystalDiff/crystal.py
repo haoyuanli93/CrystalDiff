@@ -132,6 +132,9 @@ class RectangleGrating:
         self.height = 8.488457671486596  # (um). This is the height of grating tooth.
         self.surface_point = np.array([0., 0., 3e7], dtype=np.float64)
 
+        # The thickness of the base
+        self.base_thickness = 10.  # (um)
+
         # Geometry info
         self.direction = np.array([0., 1., 0.], dtype=np.float64)  # This is the direction of the momentum transfer
         self.surface_point = np.array([0., 0., 3e7], dtype=np.float64)
@@ -140,6 +143,7 @@ class RectangleGrating:
         # Derived parameter to calculate effects
         self.ab_ratio = self.b / (self.a + self.b)
         self.h = self.height * self.normal
+        self.thick_vec = self.base_thickness * self.normal
         self.period = self.a + self.b  # (um)
         self.base_wave_vector = self.direction * np.pi * 2. / self.period
 
@@ -150,6 +154,7 @@ class RectangleGrating:
 
     def __update_h(self):
         self.h = self.height * self.normal
+        self.thick_vec = self.base_thickness * self.normal
 
     def set_a(self, a):
         self.a = a
