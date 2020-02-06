@@ -1,7 +1,14 @@
-# CrystalDiff
+# Notice
+Since I have finished the simulation project, 
+I have stopped maintaining this repo. 
+
+Though I believe so, I can not guarantee that 
+the simulation in this repo is correct.
+
+## CrystalDiff
 This is a repo for the simulation from crystals.
 
-## Important Notice
+### Important Notice (No longer useful)
 Notice that, even though, in reality, most of the time, people will not
 need such complete implementation of the 2-beam dynamical diffraction
 theory, because I am maintaining this repo by myself, I need to keep the 
@@ -15,7 +22,7 @@ In this way, if I need to make modifications to some functions, I do
 not need to worry about the compatibility with the other functions.
  
  
-## ToDo list
+### ToDo list (Outdated and will not be implemented)
 1. Change the name of util.get_rocking_curve
 2. There are two kinds of rotations in this package. I think the current
     handling is not ideal.
